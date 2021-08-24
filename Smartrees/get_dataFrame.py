@@ -79,5 +79,3 @@ class SmarTrees():
         df_B10 = self.get_df_band(10)
         df = df_B4.join(df_B5).join(df_B10)
         return df
-
-    def get_pixel_loc(self)
