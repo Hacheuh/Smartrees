@@ -23,7 +23,6 @@ data=SmarTrees()
 df=data.get_3bands_df()
 """
 
-
 class SmarTrees():
     def __init__(self,
                  ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
@@ -44,8 +43,8 @@ class SmarTrees():
                                   False)
         return aoi
 
-    def get_array_from_image(self, image):
-        return geemap.ee_to_numpy(image, region=self.aoi)
+    def get_array_from_image(self, image, region=aoi):
+        return geemap.ee_to_numpy(image, region=aoi)
 
     def get_img_band(self, band):
         "GET the band from ee_image"
@@ -59,6 +58,20 @@ class SmarTrees():
         df = pd.DataFrame(np.concatenate(img_arr), columns=[f'B{band}'])
         return df
 
+    def Export_image(self,
+                     image=img,
+                     filename='filename',
+                     scale='30',
+                     region=aoi,
+                     file_per_band=True):
+        " Exports and image with the file name and path in filename"
+        geemap.ee_export_image(image,
+                               filename=filename,
+                               scale=scale,
+                               region=region,
+                               file_per_band=True)
+        pass
+
     def get_3bands_df(self):
         "GET the datafram from of bands B4,B5,B10 from ee_image"
         df_B4 = self.get_df_band(4)
@@ -66,16 +79,3 @@ class SmarTrees():
         df_B10 = self.get_df_band(10)
         df = df_B4.join(df_B5).join(df_B10)
         return df
-
-    def Export_image(self,
-                     image,
-                     filename='filename',
-                     scale='30',
-                     file_per_band=True):
-        " Exports and image with the file name and path in filename"
-        geemap.ee_export_image(image,
-                               filename=filename,
-                               scale=scale,
-                               region=self.aoi,
-                               file_per_band=True)
-        pass
