@@ -79,3 +79,32 @@ class SmarTrees():
                                region=self.aoi,
                                file_per_band=True)
         pass
+
+    def get_pixel_loc(self,index,band=10):
+        " Utlisé pour obtenir les coordonnées géographiques des coins du pixel d'indice index"
+        # on récupère les données de la carte
+
+        img=self.get_img_band(band)
+        img_arr = self.get_array_from_image(img)
+        img_arr_shape=img_arr.shape
+        index_max=img_arr.shape[0]*img_arr.shape[1]
+        print('index_max=',index_max)
+        if index >= index_max or index<0 :
+            return None
+        # countours de la carte
+        left_lim=min(self.corner1[0],self.corner2[0])
+        right_lim=max(self.corner1[0],self.corner2[0])
+        top_lim=max(self.corner1[1],self.corner2[1])
+        bot_lim=min(self.corner1[1],self.corner2[1])
+
+        k1=index % img_arr_shape[1]
+        k2= index // img_arr_shape[1]
+        left_lim_pix=left_lim+(right_lim-left_lim)/img_arr_shape[1]*k1
+        right_lim_pix=left_lim+(right_lim-left_lim)/img_arr_shape[1]*(k1+1)
+        top_lim_pix=top_lim+(bot_lim-top_lim)/img_arr_shape[0]*(k2)
+        bot_lim_pix=top_lim+(bot_lim-top_lim)/img_arr_shape[0]*(k2+1)
+
+        corner1_pix=[left_lim_pix,top_lim_pix]
+        corner2_pix=[right_lim_pix,bot_lim_pix]
+        output=(corner1_pix,corner2_pix)
+        return output
