@@ -107,6 +107,7 @@ class SmarTrees():
         corner2_pix=[right_lim_pix,bot_lim_pix]
         output=(corner1_pix,corner2_pix)
         return output
+<<<<<<< HEAD
 
     def get_NDVIandKELVIN(self):
 
@@ -126,3 +127,5 @@ class SmarTrees():
         df_new = df[['B10']].join(df1)
 
         return df_new
+=======
+>>>>>>> master
