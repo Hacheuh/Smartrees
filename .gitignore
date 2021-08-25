@@ -3,6 +3,9 @@
 .ipynb_checkpoints
 .DS_Store
 raw_data/
+notebooks/
 *.csv
 **/__pycache__/
 .env
+notebooks/
+output_images/*.png

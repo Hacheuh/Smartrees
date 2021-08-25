@@ -23,13 +23,17 @@ mlflow
 s3fs
 
 # utilities
-six>=1.14
+six >=1.14
 joblib
 memoized-property
 termcolor
 
-# maps
-earthengine-api
-folium
+#get Temperature
+ee
 geehydro
 geemap
+folium
+selenium
+imgkit
+js2py
+matplotlib
