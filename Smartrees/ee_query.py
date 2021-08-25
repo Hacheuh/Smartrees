@@ -3,6 +3,8 @@ import geemap
 import geehydro
 import folium
 import pandas as pd
+import datetime
+from datetime import timedelta
 
 ee.Initialize()
 
@@ -42,3 +44,28 @@ def mapper(img_id:str, pos = [43.70684086,7.28045496] ):
     trueColor432Vis = {'min': 0.0,'max':0.4,}
     mapp.addLayer(trueColor432, trueColor432Vis, 'True Color (432)')
     return mapp
+
+def closest_image(date : str = '22/01/2017', pos : tuple = (7.28045496,43.70684086)):
+    date_list = date.split('/')
+    dateform = datetime.date(int(date_list[2]),int(date_list[1]),int(date_list[0]))
+    date_start = dateform-timedelta(days=15)
+    date_stop = dateform+timedelta(days=15)
+    collection = ee.ImageCollection('LANDSAT/LC08/C01/T1_TOA').filterDate(f'{date_start}', f'{date_stop}').filterBounds(ee.Geometry.Point(pos[0],pos[1]))
+    arr_date = collection.aggregate_array('DATE_ACQUIRED').getInfo()
+
+    datetime_df=pd.DataFrame(arr_date, columns={'Dates'})
+
+    def transfo_date_datetime(x:str):
+        dat = x.split('-')
+        dat2 = datetime.date(int(dat[0]),int(dat[1]),int(dat[2]))
+        return dat2
+
+    def transfo_date_diff(x:str):
+        dat = x.split('-')
+        dat2 = datetime.date(int(dat[0]),int(dat[1]),int(dat[2]))
+        return abs(dat2-dateform)
+
+    datetime_df['diff']=datetime_df.Dates.map(transfo_date_diff )
+    datetime_df['datetime_format']=datetime_df.Dates.map(transfo_date_datetime )
+
+    return datetime_df.sort_values(by='diff').datetime_format.iloc[0]
