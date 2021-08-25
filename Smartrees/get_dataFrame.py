@@ -7,6 +7,7 @@ import folium
 import PIL.Image as Im
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 """
 La classe SmarTrees est initialisée avec le texte correspondant à l'image earth engine
@@ -33,6 +34,8 @@ class SmarTrees():
         self.corner1 = corner1
         self.corner2 = corner2
         self.aoi = self.get_aoi()
+        self.shapes={}
+        self.date=ee_image[-8:]
 
     def get_aoi(self):
         "Get The polygon region for ee as a Polygone"
@@ -55,6 +58,7 @@ class SmarTrees():
         "GET the datafram from the band from ee_image"
         img = self.get_img_band(band)
         img_arr = self.get_array_from_image(img)
+        self.shapes[band]=img_arr.shape
         df = pd.DataFrame(np.concatenate(img_arr), columns=[f'B{band}'])
         return df
 
@@ -111,14 +115,14 @@ class SmarTrees():
     def output_images(self, df):
         img_B10 = np.array(df['B10'])
         img_NDVI = np.array(df['NDVI'])
-        img_B10 = img.reshape((data.shape[10][0], data.shape[10][1]))
-        img_NDVI = img.reshape((data.shape[4][0], data.shape[4][1]))
+        img_B10 = img_B10.reshape((self.shapes[10][0], self.shapes[10][1]))
+        img_NDVI = img_NDVI.reshape((self.shapes[4][0], self.shapes[4][1]))
         plt.figure(figsize=(15, 10))
         plt.imshow(img_B10, cmap='coolwarm')
         plt.savefig(f'../output_images/{self.date}_Temp.png')
         plt.close()
         plt.figure(figsize=(15, 10))
-        plt.imshow(img_NDVI, cmap='coolwarm')
+        plt.imshow(img_NDVI, cmap='RdYlGn')
         plt.savefig(f'../output_images/{self.date}_NDVI.png')
         plt.close()
         return None
@@ -130,15 +134,14 @@ class SmarTrees():
         and returns a dataframe with 2 colonnes, ndvi and kelvin
         '''
         df=self.get_3bands_df()
-         
+
         b4 = df['B4']
         b5 = df['B5']
 
         ndvi = (b5 - b4) / (b5 + b4)
 
         df1 = pd.DataFrame((ndvi), columns=[f'NDVI'])
-        
+
         df_new = df[['B10']].join(df1)
 
         return df_new
-
