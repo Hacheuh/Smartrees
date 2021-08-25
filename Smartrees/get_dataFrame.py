@@ -28,7 +28,7 @@ class SmarTrees():
     def __init__(self,
                  ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
                  corner1=[7.2, 43.65],
-                 corner2=[7.3, 43.75]):
+                 corner2=[7.3, 43.75],scale=30):
         " Init fonction of class SmarTrees"
         self.ee_image = ee_image
         self.corner1 = corner1
@@ -36,6 +36,7 @@ class SmarTrees():
         self.aoi = self.get_aoi()
         self.shapes={}
         self.date=ee_image[-8:]
+        self.scale=30
 
     def get_aoi(self):
         "Get The polygon region for ee as a Polygone"
@@ -73,12 +74,11 @@ class SmarTrees():
     def Export_image(self,
                      image,
                      filename='filename',
-                     scale='30',
                      file_per_band=True):
         " Exports and image with the file name and path in filename"
         geemap.ee_export_image(image,
                                filename=filename,
-                               scale=scale,
+                               scale=self.scale,
                                region=self.aoi,
                                file_per_band=True)
         pass
