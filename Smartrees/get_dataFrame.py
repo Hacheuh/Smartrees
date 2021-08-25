@@ -11,7 +11,6 @@ import pandas as pd
 """
 La classe SmarTrees est initialisée avec le texte correspondant à l'image earth engine
 et  les coins doivent aussi être précisés avec pour valeurs par défaut:
-
 ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
 corner1=[7.2, 43.65],
 corner2=[7.3, 43.75]
@@ -108,3 +107,25 @@ class SmarTrees():
         corner2_pix=[right_lim_pix,bot_lim_pix]
         output=(corner1_pix,corner2_pix)
         return output
+<<<<<<< HEAD
+
+    def get_NDVIandKELVIN(self):
+
+        '''functions that computes NDVI from bands 5 and 4
+        (taken from df generated with 'get_3bands_df')
+        and returns a dataframe with 2 colonnes, ndvi and kelvin
+        '''
+        df=self.get_3bands_df()
+         
+        b4 = df['B4']
+        b5 = df['B5']
+
+        ndvi = (b5 - b4) / (b5 + b4)
+
+        df1 = pd.DataFrame((ndvi), columns=[f'NDVI'])
+        
+        df_new = df[['B10']].join(df1)
+
+        return df_new
+=======
+>>>>>>> master
