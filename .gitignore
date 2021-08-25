@@ -7,3 +7,5 @@ notebooks/
 *.csv
 **/__pycache__/
 .env
+notebooks/
+output_images/*.png

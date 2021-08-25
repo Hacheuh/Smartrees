@@ -27,3 +27,12 @@ six >=1.14
 joblib
 memoized-property
 termcolor
+
+#get Temperature
+ee
+geehydro
+folium
+selenium
+imgkit
+js2py
+matplotlib

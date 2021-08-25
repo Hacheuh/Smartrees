@@ -108,6 +108,21 @@ class SmarTrees():
         output=(corner1_pix,corner2_pix)
         return output
 
+    def output_images(self, df):
+        img_B10 = np.array(df['B10'])
+        img_NDVI = np.array(df['NDVI'])
+        img_B10 = img.reshape((data.shape[10][0], data.shape[10][1]))
+        img_NDVI = img.reshape((data.shape[4][0], data.shape[4][1]))
+        plt.figure(figsize=(15, 10))
+        plt.imshow(img_B10, cmap='coolwarm')
+        plt.savefig(f'../output_images/{self.date}_Temp.png')
+        plt.close()
+        plt.figure(figsize=(15, 10))
+        plt.imshow(img_NDVI, cmap='coolwarm')
+        plt.savefig(f'../output_images/{self.date}_NDVI.png')
+        plt.close()
+        return None
+
     def get_NDVIandKELVIN(self):
 
         '''functions that computes NDVI from bands 5 and 4
@@ -126,3 +141,4 @@ class SmarTrees():
         df_new = df[['B10']].join(df1)
 
         return df_new
+
