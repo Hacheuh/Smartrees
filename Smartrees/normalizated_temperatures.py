@@ -7,7 +7,7 @@ import numpy as np
 #import folium
 
 #import PIL.Image as Im
-#import pandas as pd
+import pandas as pd
 import matplotlib.pyplot as plt
 
 '''These fonctions are here to visualize hot points and cold points by default
@@ -43,8 +43,12 @@ def remove_sea():
 
 
 def z_temperature():
-    #return a list of z_score for temperatures without sea
+    #return a Dataframe of z_score for temperatures without sea and NDVI
+    data = get_dataFrame.SmarTrees()
+    NDVIandTemperature= data.get_NDVIandKELVIN()
+    NDVIandZ = NDVIandTemperature.drop(columns='B10')
     temper = remove_sea().B10
     print("wait 2min")
     z = [(temp - np.mean(temper)) / np.std(temper) for temp in temper.values]
-    return z
+    z = pd.DataFrame(z,columns = ['z_temperatures'])
+    return NDVIandZ.join(z).dropna()
