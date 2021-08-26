@@ -37,3 +37,6 @@ selenium
 imgkit
 js2py
 matplotlib
+
+# site
+streamlit
