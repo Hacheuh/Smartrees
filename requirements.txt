@@ -29,7 +29,7 @@ memoized-property
 termcolor
 
 #get Temperature
-earthengin-api
+earthengine-api
 geehydro
 geemap
 folium
