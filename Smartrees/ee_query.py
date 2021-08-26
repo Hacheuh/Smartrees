@@ -45,9 +45,26 @@ def mapper(img_id:str, pos = [43.70684086,7.28045496] ):
     mapp.addLayer(trueColor432, trueColor432Vis, 'True Color (432)')
     return mapp
 
-def closest_image(date : str = '22/01/2017', pos : tuple = (7.28045496,43.70684086)):
-    date_list = date.split('/')
-    dateform = datetime.date(int(date_list[2]),int(date_list[1]),int(date_list[0]))
+def closest_image(date : str = '22/01/2017', formatDate : int = 0,  pos : tuple = (7.28045496,43.70684086)):
+    ''' take a date and return the closest date (in a datetime i.e. computable format) that has an sat. image corresponding to the position given.
+    2 format of date possible :
+        - 0 is the classical everyday format DD/MM/YYYY
+        - 1 is the format used by EarthEngine YYYY-MM-DD
+
+        example of use with query :
+            df = get_meta_data(closest_image('22/01/2017'),closest_image('22/01/2017')+timedelta(days=1))
+            mapper(df['id'][0])
+    '''
+
+    if formatDate == 0:
+        date_list = date.split('/')
+        dateform = datetime.date(int(date_list[2]),int(date_list[1]),int(date_list[0]))
+    elif formatDate == 1 :
+        date_list = date.split('-')
+        dateform = datetime.date(int(date_list[0]),int(date_list[1]),int(date_list[2]))
+    else :
+        print('Invalid format of date : 0 -> DD/MM/YYYY or 1 -> YYYY-MM-DD')
+        return None
     date_start = dateform-timedelta(days=15)
     date_stop = dateform+timedelta(days=15)
     collection = ee.ImageCollection('LANDSAT/LC08/C01/T1_TOA').filterDate(f'{date_start}', f'{date_stop}').filterBounds(ee.Geometry.Point(pos[0],pos[1]))

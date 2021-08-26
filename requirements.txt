@@ -39,5 +39,4 @@ js2py
 matplotlib
 
 #date
-import datetime
-from datetime import timedelta
+datetime
