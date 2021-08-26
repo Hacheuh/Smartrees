@@ -29,7 +29,7 @@ memoized-property
 termcolor
 
 #get Temperature
-ee
+earthengin-api
 geehydro
 geemap
 folium
@@ -37,3 +37,6 @@ selenium
 imgkit
 js2py
 matplotlib
+
+#date
+datetime
