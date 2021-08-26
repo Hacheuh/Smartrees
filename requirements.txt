@@ -29,7 +29,7 @@ memoized-property
 termcolor
 
 #get Temperature
-ee
+earthengin-api
 geehydro
 geemap
 folium
@@ -40,3 +40,6 @@ matplotlib
 
 # site
 streamlit
+PIL
+#date
+datetime
