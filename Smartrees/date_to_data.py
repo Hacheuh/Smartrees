@@ -1,5 +1,19 @@
 from Smartrees.get_dataFrame import SmarTrees
 from Smartrees.ee_query import get_meta_data, cloud_out, mapper
+import ee
+import numpy as np
+import pandas as pd
+import geemap
+import geehydro
+""" This class is used to get the global dataframes from images of pos (base is Nice)
+between the date_start and date_stop. The images are chosen at a base scale of 30
+and only images with a cloud coverage inferior to perc (base 20) are kept
+Unique_days is default to 1 and means you don't keep more than one image for each day
+"""
+""" minimum code:
+data_getter=Datas()
+dict_of_df=data_getter.get_data_from_dates()
+"""
 """ This class is used to get the global dataframes from images of pos (base is Nice)
 between the date_start and date_stop. The images are chosen at a base scale of 30
 and only images with a cloud coverage inferior to perc (base 20) are kept
@@ -14,19 +28,54 @@ dict_of_df=data_getter.get_data_from_dates()
 class Datas():
     """Used to generate a dictionnary of  dataframes referenced by the ee_image name's as the key
     It contains Temperature and NDVI"""
-    def __init__(self,
-                 date_start='2020-07-31',
-                 date_stop='2021-01-31',
-                 pos=[7.28045496, 43.70684086],
-                 perc=20,
-                 scale=30,
-                 Unique_days=1):
+    def __init__(
+        self,
+        date_start='2020-07-31',
+        date_stop='2021-01-31',
+        pos=0,
+        corner1=[7.2, 43.65],
+        corner2=[7.3, 43.75],
+        perc=20,
+        sea_filtering=1,
+        scale=30,
+        Unique_days=1,
+    ):
+        # Datas relevant variables
+
         self.date_start = date_start
         self.date_stop = date_stop
         self.perc = perc
-        self.pos = pos
-        self.scale = 30
         self.Unique_days = Unique_days
+
+        # SmarTrees relevant variables
+        self.sea_filtering_d = sea_filtering
+        self.corner1 = corner1
+        self.corner2 = corner2
+        if pos == 0:
+            self.pos = [(corner1[0] + corner2[0]) / 2,
+                        (corner1[1] + corner2[1]) / 2]
+        else:
+            self.pos = pos
+        if self.pos[0] < min(corner1[0], corner2[0]) or self.pos[0] > max(
+                corner1[0], corner2[0]):
+            print(
+                """position is not relevant with corners, please check inputs. default values are:\n
+               pos=0,
+                 corner1=[7.2, 43.65],
+                 corner2=[7.3, 43.75]""")
+
+        self.scale = 30
+        self.aoi = self.get_aoi()
+        self.sea_pixel()
+
+    def get_aoi(self):
+        "Get The polygon region for ee as a Polygone"
+        aoi = ee.Geometry.Polygon([[[self.corner1[0], self.corner1[1]],
+                                    [self.corner1[0], self.corner2[1]],
+                                    [self.corner2[0], self.corner2[1]],
+                                    [self.corner2[0], self.corner1[1]]]], None,
+                                  False)
+        return aoi
 
     def get_list_from_dates(self):
         """ gets a dataframe of ee_Images of the position pos taken between date_start and date_stop """
@@ -51,7 +100,6 @@ class Datas():
             for date in df_output_list:
 
                 if len(df_intermediary[df_intermediary['Date'] == date]) > 1:
-                    print(date)
                     indexes = df_intermediary[df_intermediary['Date'] ==
                                               date].index
                     best_index = indexes[0]
@@ -79,8 +127,14 @@ class Datas():
         for name in df['id']:
             if i % 10 == 0:
                 print(f"file {i} / {df['id'].shape[0]}")
-            data = SmarTrees(name, scale=self.scale)
-            output[name] = data.get_NDVIandKELVIN()
+
+            data = SmarTrees(name,
+                             scale=self.scale,
+                             sea_pixels=self.sea_pixels,
+                             corner1=self.corner1,
+                             corner2=self.corner2,
+                             sea_filtering=self.sea_filtering_d)
+            output[name] = data.z_temperature()
             i += 1
 
         return output
@@ -90,3 +144,58 @@ class Datas():
         df = self.filter_list(df)
         dict_df = self.get_data_from_list(df)
         return dict_df
+
+    def sea_pixel(self, Tlim=297.5, NDVIlim=0):
+
+        #--------------------------------------------------------------------------------------------------
+        #Creation du DF B4,B,B10 sur l'image de référence
+
+        df_B4 = ee.Image(
+            'LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729').select(['B4'])
+        df_B5 = ee.Image(
+            'LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729').select(['B5'])
+        df_B10 = ee.Image(
+            'LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729').select(['B10'])
+        df_B4 = pd.DataFrame(np.concatenate(
+            geemap.ee_to_numpy(df_B4, region=self.aoi)),
+                             columns=['B4'])
+        df_B5 = pd.DataFrame(np.concatenate(
+            geemap.ee_to_numpy(df_B5, region=self.aoi)),
+                             columns=['B5'])
+        df_B10 = pd.DataFrame(np.concatenate(
+            geemap.ee_to_numpy(df_B10, region=self.aoi)),
+                              columns=['B10'])
+        df = df_B4.join(df_B5).join(df_B10)
+
+        # Conversion df b4,,b5,b10 en dataframe Temp, NDVI
+        b4 = df['B4']
+        b5 = df['B5']
+        ndvi = (b5 - b4) / (b5 + b4)
+
+        df1 = pd.DataFrame((ndvi), columns=[f'NDVI'])
+
+        init_df = df[['B10']].join(df1)
+
+        def filter_temp(x, lim=Tlim):
+            if x < lim:
+                return 0
+            else:
+                return 1
+
+        def filter_NDVI(x, lim=NDVIlim):
+            if x < lim:
+                return 0
+            else:
+                return 1
+
+        cleaned_col_NDVI = init_df['NDVI'].apply(lambda x: filter_NDVI(x))
+        cleaned_col_temp = init_df['B10'].apply(lambda x: filter_temp(x))
+
+        df_new = pd.DataFrame(cleaned_col_NDVI).join(
+            pd.DataFrame(cleaned_col_temp))
+        df_new['output'] = 2 * df_new['NDVI'] + df_new['B10']
+        dict_output = {0: 0, 1: 0, 2: 0, 3: 1}
+        df_final = df_new['output'].apply(lambda x: dict_output[x])
+        df_final[df_final.index < len(df_final) / 3] = 1
+        self.sea_pixels = pd.DataFrame(df_final)
+        return None
