@@ -19,10 +19,8 @@ class Temporal() :
             date_now=datetime.date(int(im_id.split('_')[-1][:4]),int(im_id.split('_')[-1][4:6]),int(im_id.split('_')[-1][6:]))
             if i==0 :
                 div_mmt[str(date_now)]=dict_df[im_id][column]
-            elif i==1 :
-                div_mmt[str(date_now)]=(dict_df[im_id][column]-div_mmt[str(date_old)])/((date_now-date_old).days)
             else :
-                div_mmt[str(date_now)]=(dict_df[im_id][column]-div_mmt[str(date_old)])/((date_now-date_old).days)
+                div_mmt[str(date_now)]=(dict_df[im_id][column]-mmt[str(date_old)])/((date_now-date_old).days)
             date_old=date_now
             mmt[str(datetime.date(int(im_id.split('_')[-1][:4]),int(im_id.split('_')[-1][4:6]),int(im_id.split('_')[-1][6:])))]=dict_df[im_id][column]
             i=i+1
