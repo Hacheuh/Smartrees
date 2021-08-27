@@ -9,6 +9,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
+import folium.plugins
+from folium import raster_layers
+import branca
+import branca.colormap as cmp
+
 """
 La classe SmarTrees est initialisée avec le texte correspondant à l'image earth engine
 et  les coins doivent aussi être précisés avec pour valeurs par défaut:
@@ -37,6 +43,8 @@ class SmarTrees():
         self.shapes={}
         self.date=ee_image[-8:]
         self.scale=30
+        self.pos = [(corner1[0] + corner2[0]) / 2,
+                    (corner1[1] + corner2[1]) / 2]
 
     def get_aoi(self):
         "Get The polygon region for ee as a Polygone"
@@ -146,8 +154,44 @@ class SmarTrees():
 
         return df_new
 
+# Display map folium of temperature and NDVI
 
-# Coldpoints and normalization fonctions
+    def display_folium_map(self,min_temp=20,max_temp=40):
+
+        linearndvi = cmp.LinearColormap(
+        ['#d73027', '#fc8d59', '#fee08b','#d9ef8b', '#91cf60', '#1a9850'],
+        vmin=-1, vmax=1,
+        caption='NDVI - Vegetation index' #Caption for Color scale or Legend
+        )
+
+        palettetemp=['blue', '#fddbc7', 'red' ]
+        linear_temp = cmp.LinearColormap(
+            palettetemp,
+            vmin=min_temp,
+            vmax=max_temp,
+            caption='Temperature (°C)'  #Caption for Color scale or Legend
+        )
+
+        image = ee.Image(self.ee_image);
+        nir = image.select('B5');
+        red = image.select('B4');
+        b10=image.select('B10');
+        ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI');
+        temp=b10.subtract(273.15);
+
+        mapNice = folium.Map(location=[self.pos[1],self.pos[0]], zoom_start=12)
+        mapNice.addLayer(temp,{'min': min_temp, 'max': max_temp, 'palette' : palettetemp },'Temp')
+        mapNice.addLayer(ndvi,{'palette':['#d73027', '#fc8d59', '#fee08b','#d9ef8b', '#91cf60', '#1a9850']},'NDVI')
+        #FloatImage(image_ndvi, bottom=0, left=10).add_to(mapNice)
+
+        folium.LayerControl().add_to(mapNice)
+        mapNice.add_child(linearndvi)
+        mapNice.add_child(linear_temp)
+        mapNice
+        #linear_temp,linearndvi
+        return mapNice
+
+    # Coldpoints and normalization fonctions
     def temperature(self):
         _3bands = self.get_3bands_df()
         return _3bands[["B10"]]
