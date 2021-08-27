@@ -29,9 +29,12 @@ class Temporal() :
 
         return mmt, div_mmt
 
-    def get_evo_allfeat(self):
+    def get_evo_allfeat(self, normalized = True):
         ''' Gather precisely temperature and ndvi temporal evolution '''
-        temp, div_temp = self.evo_temp(dict_df=self.dict_df,column='B10')
+        if normalized :
+            temp, div_temp = self.evo_temp(dict_df=self.dict_df,column='Norm_Temp')
+        else :
+            temp, div_temp = self.evo_temp(dict_df=self.dict_df,column='B10')
         ndvi, div_ndvi = self.evo_temp(dict_df=self.dict_df)
         return temp, div_temp, ndvi, div_ndvi
 
@@ -65,24 +68,24 @@ class Temporal() :
             temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
             plot = plt.subplots(2,2,figsize=(15,10))
             plt.subplot(2,2,1)
-            self.plot_evo_mean(K_to_C(temp),feature='Temperature (°C)')
+            self.plot_evo_mean(temp,feature='Normalized Temperature')
             plt.subplot(2,2,2)
             self.plot_evo_mean(ndvi)
             plt.subplot(2,2,3)
-            self.plot_evo_mean(div_temp,feature='Derivative Temperature (°C.)', derivative=True)
+            self.plot_evo_mean(div_temp,feature='Derivative Norm. Temperature', derivative=True)
             plt.subplot(2,2,4)
             self.plot_evo_mean(div_ndvi, feature='Derivative NDVI', derivative=True)
         else :
             temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
             plot = plt.subplots(2,2,figsize=(15,10))
             plt.subplot(2,2,1)
-            self.plot_evo(K_to_C(temp),feature='Temperature (°C)', pix=0)
+            self.plot_evo(temp,feature='Normalized Temperature', pixel=pix)
             plt.subplot(2,2,2)
-            self.plot_evo(ndvi,pix=0)
+            self.plot_evo(ndvi,pixel=pix)
             plt.subplot(2,2,3)
-            self.plot_evo(div_temp,feature='Derivative Temperature (°C.)', derivative=True, pix=0)
+            self.plot_evo(div_temp,feature='Derivative Norm. Temperature', derivative=True, pixel=pix)
             plt.subplot(2,2,4)
-            self.plot_evo(div_ndvi, feature='Derivative NDVI', derivative=True, pix=0)
+            self.plot_evo(div_ndvi, feature='Derivative NDVI', derivative=True, pixel=pix)
         return plot
 
     def correlation_plot(self):
