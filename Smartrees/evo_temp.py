@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime
+import numpy as np
+import seaborn as sns
 
 ''' Temporal analysis of temperature and ndvi,
 instanciation of class needs dict of datas from image collection selected'''
@@ -44,18 +46,43 @@ class Temporal() :
         plt.xticks(data.columns[::3]);
         plt.title(f'Evolution of {feature} between {data.columns[0]} and {data.columns[-1]}')
 
-    def get_evo_allplot(self):
-        ''' Function giving a condensed summary of plot for all features, for a given pixel '''
-        temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
-        plot = plt.subplots(2,2,figsize=(15,10))
-        plt.subplot(2,2,1)
-        self.plot_evo(K_to_C(temp),feature='Temperature (°C)')
-        plt.subplot(2,2,2)
-        self.plot_evo(ndvi)
-        plt.subplot(2,2,3)
-        self.plot_evo(div_temp,feature='Derivative Temperature (°C.)', derivative=True)
-        plt.subplot(2,2,4)
-        self.plot_evo(div_ndvi, feature='Derivative NDVI', derivative=True)
+    def plot_evo_mean(self, data, feature : str = 'NDVI', derivative : bool = False):
+        ''' Function plotting evolution of features for given pixel '''
+        if derivative :
+            plt.plot(data.columns[1:],data.iloc[:,1:].mean());
+        else :
+            plt.plot(data.columns,data.iloc[:,:].mean());
+        plt.xlabel('Dates')
+        plt.ylabel(feature)
+        plt.xticks(data.columns[::3]);
+        plt.title(f'Evolution of the mean {feature} between {data.columns[0]} and {data.columns[-1]}')
+
+    def get_evo_allplot(self, ismean=False, pix=0):
+        ''' Function giving a condensed summary of plot for all features, for a given pixel if ismean set to false
+        of the mean value taken over all otherwise
+        '''
+        if ismean :
+            temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
+            plot = plt.subplots(2,2,figsize=(15,10))
+            plt.subplot(2,2,1)
+            self.plot_evo_mean(K_to_C(temp),feature='Temperature (°C)')
+            plt.subplot(2,2,2)
+            self.plot_evo_mean(ndvi)
+            plt.subplot(2,2,3)
+            self.plot_evo_mean(div_temp,feature='Derivative Temperature (°C.)', derivative=True)
+            plt.subplot(2,2,4)
+            self.plot_evo_mean(div_ndvi, feature='Derivative NDVI', derivative=True)
+        else :
+            temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
+            plot = plt.subplots(2,2,figsize=(15,10))
+            plt.subplot(2,2,1)
+            self.plot_evo(K_to_C(temp),feature='Temperature (°C)', pix=0)
+            plt.subplot(2,2,2)
+            self.plot_evo(ndvi,pix=0)
+            plt.subplot(2,2,3)
+            self.plot_evo(div_temp,feature='Derivative Temperature (°C.)', derivative=True, pix=0)
+            plt.subplot(2,2,4)
+            self.plot_evo(div_ndvi, feature='Derivative NDVI', derivative=True, pix=0)
         return plot
 
     def correlation_plot(self):
