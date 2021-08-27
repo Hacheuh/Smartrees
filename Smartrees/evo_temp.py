@@ -58,6 +58,16 @@ class Temporal() :
         self.plot_evo(div_ndvi, feature='Derivative NDVI', derivative=True)
         return plot
 
+    def correlation_plot(self):
+        temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
+        plot=plt.subplots(figsize=(15,10))
+        div_temp_all = np.array(div_temp.iloc[:,1:]).reshape(104429*11)
+        div_ndvi_all = np.array(div_ndvi.iloc[:,1:]).reshape(104429*11)
+        sns.scatterplot(div_temp_all,div_ndvi_all);
+        plt.xlabel('Temperature derivative (K/day)');
+        plt.ylabel('NDVI derivative (/day)');
+        plt.title('Correlation between temperature and ndvi');
+        return plot
 
 def K_to_C(temperature):
     ''' Transform Kelvin into Celsius'''
