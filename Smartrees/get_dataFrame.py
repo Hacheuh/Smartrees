@@ -145,3 +145,45 @@ class SmarTrees():
         df_new = df[['B10']].join(df1)
 
         return df_new
+
+
+# Coldpoints and normalization fonctions
+    def temperature(self):
+        _3bands = self.get_3bands_df()
+        return _3bands[["B10"]]
+
+    def check_coldpoints(self,
+                         temperature=0,
+                         hottest=297):
+        temperature = self.temperature()
+        temperature.loc[:, 'index'] = temperature.index
+        temperature.loc[:, 'value'] = 0
+        temperature.loc[temperature[temperature['B10'] < hottest].index,
+                        'value'] = 1
+        print('0 for hot, 1 for cold')
+        return temperature
+
+    def show_coldpoints(self, hottest=297):
+        temperatures = self.temperature()
+        temperature = self.check_coldpoints(temperatures,
+                                            hottest=hottest)
+        temp_array = np.array(temperature.value).reshape(377, 277)
+        plt.imshow(temp_array, cmap='gray')
+
+    def remove_sea(self):
+        #return a df without the sea
+        temp = self.check_coldpoints()
+        return temp[temp['value'] == 0]
+
+    def z_temperature(self, keepnan=False):
+        #return a Dataframe of z_score for temperatures without sea and NDVI
+        NDVIandTemperature = self.get_NDVIandKELVIN()
+        NDVIandZ = NDVIandTemperature.drop(columns='B10')
+        temper = self.remove_sea().B10
+        print("wait 2min")
+        z = [(temp - np.mean(temper)) / np.std(temper)
+             for temp in temper.values]
+        z = pd.DataFrame(z, columns=['z_temperatures'])
+        if keepnan == True:
+            return NDVIandZ.join(z)
+        return NDVIandZ.join(z).dropna()
