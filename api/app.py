@@ -2,7 +2,7 @@ import streamlit as st
 from PIL import Image
 
 # alternative icon image
-icon = Image.open("raw_data/SmarTree.JPG")
+icon = Image.open("imgs/SmarTree.JPG")
 
 st.set_page_config(layout='centered', page_title='SmarTrees', page_icon=icon)
 
