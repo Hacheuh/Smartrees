@@ -148,11 +148,6 @@ class Temporal() :
             result = dateform-timedelta(days=356)
             return result
 
-        def transfo_date_datetime(x:str):
-            dat = x.split('-')
-            dat2 = datetime.date(int(dat[0]),int(dat[1]),int(dat[2]))
-            return dat2
-
         dataf=pd.DataFrame()
         lud=last_usable_date(list_date)
         for date in list_date:
@@ -209,13 +204,14 @@ class Temporal() :
             plt.title('Correlation between norm. temperature and ndvi');
         return plot
 
-    def unite_oneY(self):
+    def unite_oneY(self, months : list = [i for i in range(1,13)]):
         temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = self.get_evo_allfeat()
-        base,corresp,match_table=self.match_one_year(temp.columns)
+        base,corresp,match_table=self.match_one_year(temp.columns[select_month(months,temp.columns)])
 
         raw_diff_temp_all = np.array(self.interval_diff(base, corresp, temp).iloc[:,0])
         raw_diff_ndvi_all = np.array(self.interval_diff(base, corresp, ndvi).iloc[:,0])
-        df=pd.concat((pd.Series(raw_diff_temp_all),pd.Series(raw_diff_ndvi_all)))
+        df=pd.concat((pd.Series(raw_diff_temp_all),pd.Series(raw_diff_ndvi_all)),axis=1)
+        df.rename(columns={0: 'temp',1:'ndvi'},inplace=True)
         return df
 
 
@@ -260,3 +256,16 @@ class Temporal() :
 def K_to_C(temperature):
     ''' Transform Kelvin into Celsius'''
     return temperature - 273.15
+
+def transfo_date_datetime(x:str):
+    ''' transform query string date into datetime format'''
+    dat = x.split('-')
+    dat2 = datetime.date(int(dat[0]),int(dat[1]),int(dat[2]))
+    return dat2
+
+def select_month(months, ref):
+    ''' return a list of dates with given months '''
+    Liste=[transfo_date_datetime(i) for i in ref]
+    Liste2=[i.month for i in Liste]
+    Liste3=[(i in months) for i in Liste2]
+    return Liste3
