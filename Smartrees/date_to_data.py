@@ -49,6 +49,7 @@ class Datas():
         self.corner1 = [pos[0] + width[0] / 2, pos[1] + width[1] / 2]
         self.corner2 = [pos[0] - width[0] / 2, pos[1] - width[1] / 2]
         self.pos = pos
+        self.width = width
 
         self.scale = 30
         self.aoi = self.get_aoi()
@@ -116,12 +117,7 @@ class Datas():
             if i % 10 == 0:
                 print(f"file {i} / {df['id'].shape[0]}")
 
-            data = SmarTrees(name,
-                             scale=self.scale,
-                             sea_pixels=self.sea_pixels,
-                             corner1=self.corner1,
-                             corner2=self.corner2,
-                             sea_filtering=self.sea_filtering_d)
+            data = SmarTrees(name, scale=self.scale, sea_pixels=self.sea_pixels, pos= self.pos, width= self.width, sea_filtering=self.sea_filtering_d)
             output[name] = data.z_temperature()
             i += 1
 
