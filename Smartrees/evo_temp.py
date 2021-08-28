@@ -91,12 +91,48 @@ class Temporal() :
     def correlation_plot(self):
         temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
         plot=plt.subplots(figsize=(15,10))
-        div_temp_all = np.array(div_temp.iloc[:,1:]).reshape(104429*11)
-        div_ndvi_all = np.array(div_ndvi.iloc[:,1:]).reshape(104429*11)
+        div_temp_all = np.array(div_temp.iloc[:,1:]).reshape(div_temp.shape[0]*(div_temp.shape[1]-1))
+        div_ndvi_all = np.array(div_ndvi.iloc[:,1:]).reshape(div_ndvi.shape[0]*(div_ndvi.shape[1]-1))
         sns.scatterplot(div_temp_all,div_ndvi_all);
-        plt.xlabel('Temperature derivative (K/day)');
-        plt.ylabel('NDVI derivative (/day)');
-        plt.title('Correlation between temperature and ndvi');
+        plt.xlabel('Norm. Temperature derivative');
+        plt.ylabel('NDVI derivative');
+        plt.title('Correlation between norm. temperature and ndvi');
+        return plot
+
+    def simple_pred_hotspot(self):
+        ''' define a combined index for hotspots and print a map image of it'''
+        temp, div_temp, ndvi, div_ndvi = self.get_evo_allfeat()
+
+        def custom_index_ndvi(x, seuil=0.5):
+            if x<0:
+                return 0
+            elif x>seuil:
+                return 0
+            return 1-x
+
+        def custom_index_temp(x):
+            if x<0:
+                return 0
+            return x
+
+        index=temp.iloc[:,0].map(custom_index_temp)*ndvi.iloc[:,0].map(custom_index_ndvi)
+        Tree_necessity_index=(index+abs(min(index)))/(max(index)-min(index))*100
+
+        def fill_zeros(data=Tree_necessity_index,size=377*277):
+            df=pd.DataFrame(data.copy())
+            true_size=len(df)
+            df['indice']=df.index
+            datframe=pd.DataFrame(np.zeros((size,)),columns={'Tree_index'})
+            datframe.loc[df.index,'Tree_index']=df.iloc[:,0]
+            return datframe
+
+        Tree_necessity_index_filled =fill_zeros()
+
+        plot=plt.subplots(figsize=(15,10))
+        im=np.array(Tree_necessity_index_filled).reshape((377,277))
+        plt.imshow(im, cmap='viridis')
+        plt.title('Tree necessity index')
+        plt.colorbar()
         return plot
 
 def K_to_C(temperature):
