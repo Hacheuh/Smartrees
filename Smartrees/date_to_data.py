@@ -11,12 +11,10 @@ between the date_start and date_stop. The images are chosen at a base scale of 3
 and only images with a cloud coverage inferior to perc (base 20) are kept
 Unique_days is default to 1 and means you don't keep more than one image for each day
 """
-
 """ minimum code for dict of NDVI and norm temp dataframes:
 data_getter=Datas()
 dict_of_df=data_getter.get_data_from_dates()
 """
-
 """ MINIMUM CODE for dict of NDVI and norm temp dataframes  AND  working dataframes:
 data_getter=Datas()
 dict_of_df=data_getter.get_data_from_dates()
@@ -28,17 +26,17 @@ class Datas():
     """Used to generate a dictionnary of  dataframes referenced by the ee_image name's as the key
     It contains Temperature and NDVI"""
     def __init__(
-            self,
-            date_start='2020-07-31',  #Start for search of images.    MINIMUM VALUE IS 2013-07-31 , bugs observed below
-            date_stop='2021-01-31',  #Stop date for the search of images
-            pos=0,                     #Pos of images, if 0, will be calculated as mean of corners
-            corner1=[7.2, 43.65],       # Corners of aoi region (Square on which images are taken)
-            corner2=[7.3, 43.75],
-            perc=20,                    # Maximum percentage of cloud coverage
-            sea_filtering=1,            # Filtering sea pixels 1 , not 0
-            scale=30,                   # Scale of images
-            Unique_days=1,              # Accounting for days that are present in double
-            saving_files=False):        # Do we save files in raw_data
+        self,
+        date_start='2020-07-31',  #Start for search of images.    MINIMUM VALUE IS 2013-07-31 , bugs observed below
+        date_stop='2021-01-31',  #Stop date for the search of images
+        pos=[7.25, 43.7
+             ],  #Pos of images, if 0, will be calculated as mean of corners
+        width=[0.1, 0.1],  # Width in longitude and lattitude of the AOI region
+        perc=20,  # Maximum percentage of cloud coverage
+        sea_filtering=1,  # Filtering sea pixels 1 , not 0
+        scale=30,  # Scale of images
+        Unique_days=1,  # Accounting for days that are present in double
+        saving_files=False):  # Do we save files in raw_data
         # Datas relevant variables
 
         self.date_start = date_start
@@ -48,20 +46,9 @@ class Datas():
 
         # SmarTrees relevant variables
         self.sea_filtering_d = sea_filtering
-        self.corner1 = corner1
-        self.corner2 = corner2
-        if pos == 0:
-            self.pos = [(corner1[0] + corner2[0]) / 2,
-                        (corner1[1] + corner2[1]) / 2]
-        else:
-            self.pos = pos
-        if self.pos[0] < min(corner1[0], corner2[0]) or self.pos[0] > max(
-                corner1[0], corner2[0]):
-            print(
-                """position is not relevant with corners, please check inputs. default values are:\n
-               pos=0,
-                 corner1=[7.2, 43.65],
-                 corner2=[7.3, 43.75]""")
+        self.corner1 = [pos[0] + width[0] / 2, pos[1] + width[1] / 2]
+        self.corner2 = [pos[0] - width[0] / 2, pos[1] - width[1] / 2]
+        self.pos = pos
 
         self.scale = 30
         self.aoi = self.get_aoi()
