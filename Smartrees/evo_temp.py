@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime
+from datetime import timedelta
 import numpy as np
 import seaborn as sns
 
@@ -131,6 +132,94 @@ class Temporal() :
             plt.ylabel('Raw diff. NDVI');
             plt.title('Correlation between norm. temperature and ndvi');
         return plot
+
+    """ correlation plots and dataframe on more that one image """
+
+    def match_one_year(self,ref):
+        """ Do a temporal matching between images with one year interval """
+        list_date=[i for i in ref]
+        list_date_base=[]
+        list_date_plusoneY=[]
+
+        def last_usable_date(list_of_date):
+            date=list_of_date[-1]
+            date_list = date.split('-')
+            dateform = datetime.date(int(date_list[0]),int(date_list[1]),int(date_list[2]))
+            result = dateform-timedelta(days=356)
+            return result
+
+        def transfo_date_datetime(x:str):
+            dat = x.split('-')
+            dat2 = datetime.date(int(dat[0]),int(dat[1]),int(dat[2]))
+            return dat2
+
+        dataf=pd.DataFrame()
+        lud=last_usable_date(list_date)
+        for date in list_date:
+            date_list = date.split('-')
+            dateform = datetime.date(int(date_list[0]),int(date_list[1]),int(date_list[2]))
+            if dateform<lud:
+                list_date_base.append(dateform)
+                list_date_plusoneY.append(dateform+timedelta(days=365))
+        list_date=[transfo_date_datetime(x) for x in list_date]
+        dataf['list']=list_date
+        for i in list_date_plusoneY:
+            dataf[str(i)]=abs(dataf.list-i)
+        corresp=[]
+        for i in dataf.columns[1:]:
+            corresp.append(dataf[['list',i]].sort_values(by=i).list.iloc[0])
+        match_table=pd.DataFrame(np.array([list_date_base,corresp]).T,columns=['base','corresp'])
+        return list_date_base,corresp,match_table
+
+    def interval_diff(self, base, corresp, feat):
+        """ compute substraction between two sets of images at a given interval """
+        df = pd.DataFrame()
+
+        for i,j in zip(base,corresp):
+            df = pd.concat((df,feat[str(j)]-feat[str(i)]),axis=0)
+
+        return df
+
+    def correlation_plot_all(self):
+        ''' plot correlations between ndvi and temp between two sets of images with a given temporal interval '''
+        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = self.get_evo_allfeat()
+        base,corresp,match_table=self.match_one_year(temp.columns)
+
+        plot=plt.subplots(figsize=(15,10))
+        raw_diff_temp_all = np.array(self.interval_diff(base, corresp, temp).iloc[:,0])
+        raw_diff_ndvi_all = np.array(self.interval_diff(base, corresp, ndvi).iloc[:,0])
+        sns.scatterplot(raw_diff_temp_all,raw_diff_ndvi_all);
+        plt.xlabel('Raw diff. Norm. Temperature');
+        plt.ylabel('Raw diff. NDVI');
+        plt.title('Correlation between norm. temperature and ndvi');
+        return plot
+
+    def correlation_plot_all_sequential(self):
+        """Variant of previous function giving """
+        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = self.get_evo_allfeat()
+        base,corresp,match_table=self.match_one_year(temp.columns)
+
+        plot=plt.subplots(figsize=(15,10))
+        for i,j in zip(base,corresp):
+            raw_diff_temp_all = temp[str(j)]-temp[str(i)]
+            raw_diff_ndvi_all = ndvi[str(j)]-ndvi[str(i)]
+            sns.scatterplot(raw_diff_temp_all,raw_diff_ndvi_all);
+            plt.xlabel('Raw diff. Norm. Temperature');
+            plt.ylabel('Raw diff. NDVI');
+            plt.title('Correlation between norm. temperature and ndvi');
+        return plot
+
+    def unite_oneY(self):
+        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = self.get_evo_allfeat()
+        base,corresp,match_table=self.match_one_year(temp.columns)
+
+        raw_diff_temp_all = np.array(self.interval_diff(base, corresp, temp).iloc[:,0])
+        raw_diff_ndvi_all = np.array(self.interval_diff(base, corresp, ndvi).iloc[:,0])
+        df=pd.concat((pd.Series(raw_diff_temp_all),pd.Series(raw_diff_ndvi_all)))
+        return df
+
+
+    """ predictions with specific index"""
 
     def simple_pred_hotspot(self, date='2020-08-04'):
         ''' define a combined index for hotspots and print a map image of it'''
