@@ -48,7 +48,7 @@ class SmarTrees():
                    0.1],  # Width in longitude and lattitude of the AOI region
             scale=30,
             sea_pixels=None,
-            sea_filtering=1):
+            sea_filtering=0):
         " Init fonction of class SmarTrees"
         self.ee_image = ee_image
         self.corner1 = [pos[0] + width[0] / 2, pos[1] + width[1] / 2]
@@ -138,19 +138,26 @@ class SmarTrees():
         output = (corner1_pix, corner2_pix)
         return output
 
-    def output_images(self, df):
-        """ Save NDVI and B10 images in output_images """
-        img_B10 = np.array(df['B10'])
-        img_NDVI = np.array(df['NDVI'])
-        img_B10 = img_B10.reshape((self.shapes[10][0], self.shapes[10][1]))
-        img_NDVI = img_NDVI.reshape((self.shapes[4][0], self.shapes[4][1]))
+    def output_images(self, col, f_name, cmap='RdYlGn', title='', band=10):
+        """ Save image of column with file name f_name, you can precise title, FOR EXAMPLE
+        title= 'NDVI index on Nice'
+        get_data.output_images(df['NDVI'],'NDVI_Nice',title=title)
+        or
+        title= 'Normalized temperature in Nice'
+        get_data.output_images(df['Norm_Temp'],'Temp_Nice',title=title)
+        """
+
+        img = np.array(col)
+        img = img.reshape((self.shapes[band][0], self.shapes[band][1]))
+
         plt.figure(figsize=(15, 10))
-        plt.imshow(img_B10, cmap='coolwarm')
-        plt.savefig(f'../output_images/{self.date}_Temp.png')
-        plt.close()
-        plt.figure(figsize=(15, 10))
-        plt.imshow(img_NDVI, cmap='RdYlGn')
-        plt.savefig(f'../output_images/{self.date}_NDVI.png')
+        if title != '':
+            plt.title(title, fontsize=30)
+        plt.imshow(img, cmap=cmap)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+
+        plt.savefig(f'../output_images/{f_name}_{self.date}.png')
         plt.close()
         return None
 
