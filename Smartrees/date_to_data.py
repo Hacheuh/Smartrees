@@ -1,4 +1,5 @@
 from Smartrees.get_dataFrame import SmarTrees
+from Smartrees.evo_temp import Temporal
 from Smartrees.ee_query import get_meta_data, cloud_out, mapper
 import ee
 import numpy as np
@@ -10,18 +11,16 @@ between the date_start and date_stop. The images are chosen at a base scale of 3
 and only images with a cloud coverage inferior to perc (base 20) are kept
 Unique_days is default to 1 and means you don't keep more than one image for each day
 """
-""" minimum code:
+
+""" minimum code for dict of NDVI and norm temp dataframes:
 data_getter=Datas()
 dict_of_df=data_getter.get_data_from_dates()
 """
-""" This class is used to get the global dataframes from images of pos (base is Nice)
-between the date_start and date_stop. The images are chosen at a base scale of 30
-and only images with a cloud coverage inferior to perc (base 20) are kept
-Unique_days is default to 1 and means you don't keep more than one image for each day
-"""
-""" minimum code:
+
+""" MINIMUM CODE for dict of NDVI and norm temp dataframes  AND  working dataframes:
 data_getter=Datas()
 dict_of_df=data_getter.get_data_from_dates()
+temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = get_evols(self, dict_of_dfs)
 """
 
 
@@ -29,17 +28,17 @@ class Datas():
     """Used to generate a dictionnary of  dataframes referenced by the ee_image name's as the key
     It contains Temperature and NDVI"""
     def __init__(
-        self,
-        date_start='2020-07-31',
-        date_stop='2021-01-31',
-        pos=0,
-        corner1=[7.2, 43.65],
-        corner2=[7.3, 43.75],
-        perc=20,
-        sea_filtering=1,
-        scale=30,
-        Unique_days=1,
-    ):
+            self,
+            date_start='2020-07-31',  #Start for search of images.    MINIMUM VALUE IS 2013-07-31 , bugs observed below
+            date_stop='2021-01-31',  #Stop date for the search of images
+            pos=0,                     #Pos of images, if 0, will be calculated as mean of corners
+            corner1=[7.2, 43.65],       # Corners of aoi region (Square on which images are taken)
+            corner2=[7.3, 43.75],
+            perc=20,                    # Maximum percentage of cloud coverage
+            sea_filtering=1,            # Filtering sea pixels 1 , not 0
+            scale=30,                   # Scale of images
+            Unique_days=1,              # Accounting for days that are present in double
+            saving_files=False):        # Do we save files in raw_data
         # Datas relevant variables
 
         self.date_start = date_start
@@ -67,6 +66,7 @@ class Datas():
         self.scale = 30
         self.aoi = self.get_aoi()
         self.sea_pixel()
+        self.saving_files = saving_files
 
     def get_aoi(self):
         "Get The polygon region for ee as a Polygone"
@@ -114,7 +114,8 @@ class Datas():
                         if index != best_index:
                             df_intermediary.drop(index, inplace=True)
             df_output = df_intermediary
-
+        if self.saving_files == 1:
+            self.save_list_of_files(df_output)
         return df_output
 
     def get_data_from_list(self, df):
@@ -140,13 +141,20 @@ class Datas():
         return output
 
     def get_data_from_dates(self):
+        """ Produce dict of NDVI and Norm_temp dataframes with their names as keys"""
         df = self.get_list_from_dates()
         df = self.filter_list(df)
         dict_df = self.get_data_from_list(df)
+
+        if self.saving_files == 1:
+            print('saving dict of dfs')
+            self.save_dataframes(dict_df)
+
         return dict_df
 
     def sea_pixel(self, Tlim=297.5, NDVIlim=0):
-
+        """ Define Sea pixels ONCE AND FOR ALL and list in dataframe self.sea_pixel if pixels are earth 1 or sea 0
+        based on Tlim and NDVIlim arguments"""
         #--------------------------------------------------------------------------------------------------
         #Creation du DF B4,B,B10 sur l'image de référence
 
@@ -199,3 +207,48 @@ class Datas():
         df_final[df_final.index < len(df_final) / 3] = 1
         self.sea_pixels = pd.DataFrame(df_final)
         return None
+
+    def save_list_of_files(self, df):
+        """ Saves ee_image details dataframe as csv fils in raw_data"""
+        df.to_csv(
+            f'./../raw_data/list_of_images_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv',
+            index=False)
+        return None
+
+    def save_dataframes(self, dict_of_dfs):
+        """ Saves NDVI and Norm_temp dataframes as csv fils in raw_data"""
+        dict_of_dfs[list(dict_of_dfs.keys())[0]].to_csv(
+            f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv'
+        )
+        for name in list(dict_of_dfs.keys())[1:]:
+            dict_of_dfs[name].to_csv(
+                f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv',
+                mode='a',
+                header=False)
+        return None
+
+    def save_evol_dfs(self, temp, div_temp, raw_diff_temp, ndvi, div_ndvi,
+                      raw_diff_ndvi, perc, scale, pos, date_start, date_stop):
+        """ Saves working dataframes as csv fils in raw_data"""
+        names = [
+            'temp', 'div_temp', 'raw_diff_temp', 'ndvi', 'div_ndvi',
+            'raw_diff_ndvi'
+        ]
+        for i, df in enumerate(
+            [temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi]):
+            df.to_csv(
+                f'./../raw_data/DF_{names[i]}_perc_{perc}_scale_{scale}_pos_{pos}_{date_start}-{date_stop}.csv'
+            )
+        return None
+
+    def get_evols(self, dict_of_dfs):
+        """ Calls class Temporal to get working dataframes"""
+        get_evo = Temporal(dict_of_dfs)
+
+        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = get_evo.get_evo_allfeat(
+        )
+        if self.saving_files == 1:
+            self.save_evol_dfs(temp, div_temp, raw_diff_temp, ndvi, div_ndvi,
+                               raw_diff_ndvi, self.perc, self.scale, self.pos,
+                               self.date_start, self.date_stop)
+        return temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi
