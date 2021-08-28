@@ -182,6 +182,9 @@ class SmarTrees():
         ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
         temp = b10.subtract(273.15)
 
+        self.pos = [(corner1[0] + corner2[0]) / 2,
+                    (corner1[1] + corner2[1]) / 2]
+
         mapNice = folium.Map(location=[self.pos[1], self.pos[0]],
                              zoom_start=12)
         mapNice.addLayer(temp, {
