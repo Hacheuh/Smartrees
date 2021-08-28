@@ -1,60 +1,67 @@
-from Smartrees.get_dataFrame import SmarTrees
-from Smartrees.evo_temp import Temporal
-from Smartrees.ee_query import get_meta_data, cloud_out, mapper
 import ee
+import geehydro
+import geemap
+from io import StringIO
+import folium
+
+import PIL.Image as Im
 import numpy as np
 import pandas as pd
-import geemap
-import geehydro
-""" This class is used to get the global dataframes from images of pos (base is Nice)
-between the date_start and date_stop. The images are chosen at a base scale of 30
-and only images with a cloud coverage inferior to perc (base 20) are kept
-Unique_days is default to 1 and means you don't keep more than one image for each day
+import matplotlib.pyplot as plt
+
+import folium.plugins
+from folium import raster_layers
+import branca
+import branca.colormap as cmp
 """
-""" minimum code for dict of NDVI and norm temp dataframes:
-data_getter=Datas()
-dict_of_df=data_getter.get_data_from_dates()
+La classe SmarTrees est initialisée avec le texte correspondant à l'image earth engine
+et  les coins doivent aussi être précisés avec pour valeurs par défaut:
+
+
+ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',     Le nom de l'image earth engine
+corner1=[7.2, 43.65],     ---->     Les coins utilisés pour la reconstruction des images
+corner2=[7.3, 43.75],
+
+scale=30              -------->     échelle pour la prise des images
+sea_pixels            -------->     Contient None ou une séries avec pour chaque indice des
+                                    pixels des images 1 si c'est de la terre ou 0 pour de l'eau
+sea_filtering          ------->     est ce que la mer est filtrée
+
+
 """
-""" MINIMUM CODE for dict of NDVI and norm temp dataframes  AND  working dataframes:
-data_getter=Datas()
-dict_of_df=data_getter.get_data_from_dates()
-temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = get_evols(self, dict_of_dfs)
+
+# CODE MINIMUM POUR RECUPERER LE DATAFRAME:
+"""
+data=SmarTrees()
+df=data.get_3bands_df()
 """
 
 
-class Datas():
-    """Used to generate a dictionnary of  dataframes referenced by the ee_image name's as the key
-    It contains Temperature and NDVI"""
+class SmarTrees():
     def __init__(
-        self,
-        date_start='2020-07-31',  #Start for search of images.    MINIMUM VALUE IS 2013-07-31 , bugs observed below
-        date_stop='2021-01-31',  #Stop date for the search of images
-        pos=[7.25, 43.7
-             ],  #Pos of images, if 0, will be calculated as mean of corners
-        width=[0.1, 0.1],  # Width in longitude and lattitude of the AOI region
-        perc=20,  # Maximum percentage of cloud coverage
-        sea_filtering=1,  # Filtering sea pixels 1 , not 0
-        scale=30,  # Scale of images
-        Unique_days=1,  # Accounting for days that are present in double
-        saving_files=False):  # Do we save files in raw_data
-        # Datas relevant variables
-
-        self.date_start = date_start
-        self.date_stop = date_stop
-        self.perc = perc
-        self.Unique_days = Unique_days
-
-        # SmarTrees relevant variables
-        self.sea_filtering_d = sea_filtering
-
+            self,
+            ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
+            pos=[
+                7.25, 43.7
+            ],  #Pos of images, if 0, will be calculated as mean of corners
+            width=[0.1,
+                   0.1],  # Width in longitude and lattitude of the AOI region
+            scale=30,
+            sea_pixels=None,
+            sea_filtering=1):
+        " Init fonction of class SmarTrees"
+        self.ee_image = ee_image
         self.corner1 = [pos[0] + width[0] / 2, pos[1] + width[1] / 2]
         self.corner2 = [pos[0] - width[0] / 2, pos[1] - width[1] / 2]
         self.pos = pos
-
+        self.aoi = self.get_aoi()  # Region polygone utilisée par earth engine
+        self.shapes = {
+        }  # dictionnaire de dimensions des images (la clé correspond à la bande utilisée sur l'image ee)
+        self.date = ee_image[-8:]  # Date récupérée d'après le nom du fichier
         self.scale = 30
-        self.aoi = self.get_aoi()
-        self.sea_pixel()
-        self.saving_files = saving_files
+        self.sea_filtering = sea_filtering
+
+        self.sea_pixels = sea_pixels
 
     def get_aoi(self):
         "Get The polygon region for ee as a Polygone"
@@ -65,178 +72,187 @@ class Datas():
                                   False)
         return aoi
 
-    def get_list_from_dates(self):
-        """ gets a dataframe of ee_Images of the position pos taken between date_start and date_stop """
-        df_image_list = get_meta_data(self.date_start, self.date_stop,
-                                      self.pos)
-        return df_image_list.sort_values('Date')
+    def get_array_from_image(self, image):
+        """ Transforms EE image in numpy Array based on the aoi region """
+        return geemap.ee_to_numpy(image, region=self.aoi)
 
-    def filter_list(self, df):
-        """ Filtering the images in the list of images based on various arguments """
+    def get_img_band(self, band):
+        "GETs the band from ee_image"
+        img = ee.Image(self.ee_image).select([f'B{band}'])
+        return img
 
-        # cloud coverage
-        df_output = cloud_out(df, perc=20)
+    def get_df_band(self, band):
+        "GETs the datafram from the band from ee_image"
+        img = self.get_img_band(band)
+        img_arr = self.get_array_from_image(img)
+        self.shapes[band] = img_arr.shape
+        df = pd.DataFrame(np.concatenate(img_arr), columns=[f'B{band}'])
+        return df
 
-        # Keep less cloudy image of each day if Unique_days==1
-        if self.Unique_days == 1:
+    def get_3bands_df(self):
+        "GETs the datafram from of bands B4,B5,B10 from ee_image"
+        df_B4 = self.get_df_band(4)
+        df_B5 = self.get_df_band(5)
+        df_B10 = self.get_df_band(10)
+        df = df_B4.join(df_B5).join(df_B10)
+        return df
 
-            df_output_list = []
-            for date in df_output['Date']:
-                df_output_list.append(date)
-            df_intermediary = df_output.copy()
+    def Export_image(self, image, filename='filename', file_per_band=True):
+        " Exports and image with the file name and path in filename"
+        geemap.ee_export_image(image,
+                               filename=filename,
+                               scale=self.scale,
+                               region=self.aoi,
+                               file_per_band=True)
+        pass
 
-            for date in df_output_list:
+    def get_pixel_loc(self, index, band=10):
+        " Utlisé pour obtenir les coordonnées géographiques des coins du pixel d'indice index"
+        # on récupère les données de la carte
 
-                if len(df_intermediary[df_intermediary['Date'] == date]) > 1:
-                    indexes = df_intermediary[df_intermediary['Date'] ==
-                                              date].index
-                    best_index = indexes[0]
-                    best_coverage = df_intermediary.loc[best_index]['Cloud']
-                    for index in indexes:
-                        if df_intermediary.loc[index]['Cloud'] < best_coverage:
-                            best_index = index
-                            best_coverage = df_intermediary.loc[best_index][
-                                'Cloud']
+        img = self.get_img_band(band)
+        img_arr = self.get_array_from_image(img)
+        img_arr_shape = img_arr.shape
+        index_max = img_arr.shape[0] * img_arr.shape[1]
+        print('index_max=', index_max)
+        if index >= index_max or index < 0:
+            return None
+        # countours de la carte
+        left_lim = min(self.corner1[0], self.corner2[0])
+        right_lim = max(self.corner1[0], self.corner2[0])
+        top_lim = max(self.corner1[1], self.corner2[1])
+        bot_lim = min(self.corner1[1], self.corner2[1])
 
-                    for index in indexes:
-                        if index != best_index:
-                            df_intermediary.drop(index, inplace=True)
-            df_output = df_intermediary
-        if self.saving_files == 1:
-            self.save_list_of_files(df_output)
-        return df_output
+        k1 = index % img_arr_shape[1]
+        k2 = index // img_arr_shape[1]
+        left_lim_pix = left_lim + (right_lim -
+                                   left_lim) / img_arr_shape[1] * k1
+        right_lim_pix = left_lim + (right_lim -
+                                    left_lim) / img_arr_shape[1] * (k1 + 1)
+        top_lim_pix = top_lim + (bot_lim - top_lim) / img_arr_shape[0] * (k2)
+        bot_lim_pix = top_lim + (bot_lim - top_lim) / img_arr_shape[0] * (k2 +
+                                                                          1)
 
-    def get_data_from_list(self, df):
-        """ Long function that outputs a dictionnary of dataframes containing NDVI and Temperature """
-        print(
-            f" the dataframe contains {df.shape[0]} lines. considering a mean treatment of 4s, it would take approximately {4.5*df.shape[0]/60} minutes"
-        )
-        output = {}
-        i = 0
-        for name in df['id']:
-            if i % 10 == 0:
-                print(f"file {i} / {df['id'].shape[0]}")
-
-            data = SmarTrees(name,
-                             scale=self.scale,
-                             sea_pixels=self.sea_pixels,
-                             corner1=self.corner1,
-                             corner2=self.corner2,
-                             sea_filtering=self.sea_filtering_d)
-            output[name] = data.z_temperature()
-            i += 1
-
+        corner1_pix = [left_lim_pix, top_lim_pix]
+        corner2_pix = [right_lim_pix, bot_lim_pix]
+        output = (corner1_pix, corner2_pix)
         return output
 
-    def get_data_from_dates(self):
-        """ Produce dict of NDVI and Norm_temp dataframes with their names as keys"""
-        df = self.get_list_from_dates()
-        df = self.filter_list(df)
-        dict_df = self.get_data_from_list(df)
+    def output_images(self, df):
+        """ Save NDVI and B10 images in output_images """
+        img_B10 = np.array(df['B10'])
+        img_NDVI = np.array(df['NDVI'])
+        img_B10 = img_B10.reshape((self.shapes[10][0], self.shapes[10][1]))
+        img_NDVI = img_NDVI.reshape((self.shapes[4][0], self.shapes[4][1]))
+        plt.figure(figsize=(15, 10))
+        plt.imshow(img_B10, cmap='coolwarm')
+        plt.savefig(f'../output_images/{self.date}_Temp.png')
+        plt.close()
+        plt.figure(figsize=(15, 10))
+        plt.imshow(img_NDVI, cmap='RdYlGn')
+        plt.savefig(f'../output_images/{self.date}_NDVI.png')
+        plt.close()
+        return None
 
-        if self.saving_files == 1:
-            print('saving dict of dfs')
-            self.save_dataframes(dict_df)
-
-        return dict_df
-
-    def sea_pixel(self, Tlim=297.5, NDVIlim=0):
-        """ Define Sea pixels ONCE AND FOR ALL and list in dataframe self.sea_pixel if pixels are earth 1 or sea 0
-        based on Tlim and NDVIlim arguments"""
-        #--------------------------------------------------------------------------------------------------
-        #Creation du DF B4,B,B10 sur l'image de référence
-
-        df_B4 = ee.Image(
-            'LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729').select(['B4'])
-        df_B5 = ee.Image(
-            'LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729').select(['B5'])
-        df_B10 = ee.Image(
-            'LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729').select(['B10'])
-        df_B4 = pd.DataFrame(np.concatenate(
-            geemap.ee_to_numpy(df_B4, region=self.aoi)),
-                             columns=['B4'])
-        df_B5 = pd.DataFrame(np.concatenate(
-            geemap.ee_to_numpy(df_B5, region=self.aoi)),
-                             columns=['B5'])
-        df_B10 = pd.DataFrame(np.concatenate(
-            geemap.ee_to_numpy(df_B10, region=self.aoi)),
-                              columns=['B10'])
-        df = df_B4.join(df_B5).join(df_B10)
-
-        # Conversion df b4,,b5,b10 en dataframe Temp, NDVI
+    def get_NDVIandKELVIN(self):
+        '''functions that computes NDVI from bands 5 and 4
+        (taken from df generated with 'get_3bands_df')
+        and returns a dataframe with 2 colonnes, ndvi and kelvin
+        '''
+        df = self.get_3bands_df()
         b4 = df['B4']
         b5 = df['B5']
         ndvi = (b5 - b4) / (b5 + b4)
-
         df1 = pd.DataFrame((ndvi), columns=[f'NDVI'])
+        df_new = df[['B10']].join(df1)
 
-        init_df = df[['B10']].join(df1)
+        return df_new
 
-        def filter_temp(x, lim=Tlim):
-            if x < lim:
-                return 0
-            else:
-                return 1
 
-        def filter_NDVI(x, lim=NDVIlim):
-            if x < lim:
-                return 0
-            else:
-                return 1
+# Display map folium of temperature and NDVI
 
-        cleaned_col_NDVI = init_df['NDVI'].apply(lambda x: filter_NDVI(x))
-        cleaned_col_temp = init_df['B10'].apply(lambda x: filter_temp(x))
-
-        df_new = pd.DataFrame(cleaned_col_NDVI).join(
-            pd.DataFrame(cleaned_col_temp))
-        df_new['output'] = 2 * df_new['NDVI'] + df_new['B10']
-        dict_output = {0: 0, 1: 0, 2: 0, 3: 1}
-        df_final = df_new['output'].apply(lambda x: dict_output[x])
-        df_final[df_final.index < len(df_final) / 3] = 1
-        self.sea_pixels = pd.DataFrame(df_final)
-        return None
-
-    def save_list_of_files(self, df):
-        """ Saves ee_image details dataframe as csv fils in raw_data"""
-        df.to_csv(
-            f'./../raw_data/list_of_images_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv',
-            index=False)
-        return None
-
-    def save_dataframes(self, dict_of_dfs):
-        """ Saves NDVI and Norm_temp dataframes as csv fils in raw_data"""
-        dict_of_dfs[list(dict_of_dfs.keys())[0]].to_csv(
-            f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv'
+    def display_folium_map(self, min_temp=20, max_temp=40):
+        """ Displays folium map of Temp (Celsius) and NDVI with scales"""
+        linearndvi = cmp.LinearColormap(
+            ['#d73027', '#fc8d59', '#fee08b', '#d9ef8b', '#91cf60', '#1a9850'],
+            vmin=-1,
+            vmax=1,
+            caption='NDVI - Vegetation index'  #Caption for Color scale or Legend
         )
-        for name in list(dict_of_dfs.keys())[1:]:
-            dict_of_dfs[name].to_csv(
-                f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv',
-                mode='a',
-                header=False)
-        return None
 
-    def save_evol_dfs(self, temp, div_temp, raw_diff_temp, ndvi, div_ndvi,
-                      raw_diff_ndvi, perc, scale, pos, date_start, date_stop):
-        """ Saves working dataframes as csv fils in raw_data"""
-        names = [
-            'temp', 'div_temp', 'raw_diff_temp', 'ndvi', 'div_ndvi',
-            'raw_diff_ndvi'
-        ]
-        for i, df in enumerate(
-            [temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi]):
-            df.to_csv(
-                f'./../raw_data/DF_{names[i]}_perc_{perc}_scale_{scale}_pos_{pos}_{date_start}-{date_stop}.csv'
+        palettetemp = ['blue', '#fddbc7', 'red']
+        linear_temp = cmp.LinearColormap(
+            palettetemp,
+            vmin=min_temp,
+            vmax=max_temp,
+            caption='Temperature (°C)'  #Caption for Color scale or Legend
+        )
+
+        image = ee.Image(self.ee_image)
+        nir = image.select('B5')
+        red = image.select('B4')
+        b10 = image.select('B10')
+        ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
+        temp = b10.subtract(273.15)
+
+        self.pos = [(corner1[0] + corner2[0]) / 2,
+                    (corner1[1] + corner2[1]) / 2]
+
+        mapNice = folium.Map(location=[self.pos[1], self.pos[0]],
+                             zoom_start=12)
+        mapNice.addLayer(temp, {
+            'min': min_temp,
+            'max': max_temp,
+            'palette': palettetemp
+        }, 'Temp')
+        mapNice.addLayer(
+            ndvi, {
+                'palette': [
+                    '#d73027', '#fc8d59', '#fee08b', '#d9ef8b', '#91cf60',
+                    '#1a9850'
+                ]
+            }, 'NDVI')
+        #FloatImage(image_ndvi, bottom=0, left=10).add_to(mapNice)
+
+        folium.LayerControl().add_to(mapNice)
+        mapNice.add_child(linearndvi)
+        mapNice.add_child(linear_temp)
+        mapNice
+        #linear_temp,linearndvi
+        return mapNice
+
+    # Coldpoints and normalization fonctions
+    def temperature(self):
+        _3bands = self.get_3bands_df()
+        return _3bands[["B10"]]
+
+    def remove_sea(self, working_df):
+        """ REMOVES SEA PIXELS OF A DATAFRAME based on the sea_pixel_table output of sea_pixel_of_Nice_ref_image class method"""
+
+        if type(self.sea_pixels) == "<class 'pandas.core.frame.DataFrame'>":
+            print(
+                'No criteria for exclusion of the sea, plz provide a sea_pixels df when instanciating class Smartrees'
             )
-        return None
+            return working_df
+        output_df = working_df.join(self.sea_pixels)
+        output_df.columns = ['Norm_Temp', 'NDVI', 'sea_pixel']
+        return output_df[output_df['sea_pixel'] == 1][['Norm_Temp', 'NDVI']]
 
-    def get_evols(self, dict_of_dfs):
-        """ Calls class Temporal to get working dataframes"""
-        get_evo = Temporal(dict_of_dfs)
+    def z_temperature(self, keepnan=False):
 
-        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = get_evo.get_evo_allfeat(
-        )
-        if self.saving_files == 1:
-            self.save_evol_dfs(temp, div_temp, raw_diff_temp, ndvi, div_ndvi,
-                               raw_diff_ndvi, self.perc, self.scale, self.pos,
-                               self.date_start, self.date_stop)
-        return temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi
+        temper = self.get_NDVIandKELVIN()
+        temper.columns = ['Norm_Temp', 'NDVI']
+        if self.sea_filtering == 1:
+
+            temper = self.remove_sea(temper)
+        means = np.mean(temper.Norm_Temp)
+        stds = np.std(temper.Norm_Temp)
+
+        def z_score(x, means=means, stds=stds):
+            return (x - means) / stds
+
+        temper['Norm_Temp'] = temper['Norm_Temp'].map(z_score)
+        temper.columns = ['Norm_Temp', 'NDVI']
+        if keepnan == True:
+            return temper
+        return temper.dropna()
