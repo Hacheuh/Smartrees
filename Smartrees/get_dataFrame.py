@@ -16,9 +16,18 @@ import branca.colormap as cmp
 """
 La classe SmarTrees est initialisée avec le texte correspondant à l'image earth engine
 et  les coins doivent aussi être précisés avec pour valeurs par défaut:
-ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
-corner1=[7.2, 43.65],
-corner2=[7.3, 43.75]
+
+
+ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',     Le nom de l'image earth engine
+corner1=[7.2, 43.65],     ---->     Les coins utilisés pour la reconstruction des images
+corner2=[7.3, 43.75],
+
+scale=30              -------->     échelle pour la prise des images
+sea_pixels            -------->     Contient None ou une séries avec pour chaque indice des
+                                    pixels des images 1 si c'est de la terre ou 0 pour de l'eau
+sea_filtering          ------->     est ce que la mer est filtrée
+
+
 """
 
 # CODE MINIMUM POUR RECUPERER LE DATAFRAME:
@@ -40,9 +49,9 @@ class SmarTrees():
         self.ee_image = ee_image
         self.corner1 = corner1
         self.corner2 = corner2
-        self.aoi = self.get_aoi()
-        self.shapes = {}
-        self.date = ee_image[-8:]
+        self.aoi = self.get_aoi()           # Region polygone utilisée par earth engine
+        self.shapes = {}                    # dictionnaire de dimensions des images (la clé correspond à la bande utilisée sur l'image ee)
+        self.date = ee_image[-8:]           # Date récupérée d'après le nom du fichier
         self.scale = 30
         self.sea_filtering = sea_filtering
 
@@ -58,15 +67,16 @@ class SmarTrees():
         return aoi
 
     def get_array_from_image(self, image):
+        """ Transforms EE image in numpy Array based on the aoi region """
         return geemap.ee_to_numpy(image, region=self.aoi)
 
     def get_img_band(self, band):
-        "GET the band from ee_image"
+        "GETs the band from ee_image"
         img = ee.Image(self.ee_image).select([f'B{band}'])
         return img
 
     def get_df_band(self, band):
-        "GET the datafram from the band from ee_image"
+        "GETs the datafram from the band from ee_image"
         img = self.get_img_band(band)
         img_arr = self.get_array_from_image(img)
         self.shapes[band] = img_arr.shape
@@ -74,7 +84,7 @@ class SmarTrees():
         return df
 
     def get_3bands_df(self):
-        "GET the datafram from of bands B4,B5,B10 from ee_image"
+        "GETs the datafram from of bands B4,B5,B10 from ee_image"
         df_B4 = self.get_df_band(4)
         df_B5 = self.get_df_band(5)
         df_B10 = self.get_df_band(10)
@@ -123,6 +133,7 @@ class SmarTrees():
         return output
 
     def output_images(self, df):
+        """ Save NDVI and B10 images in output_images """
         img_B10 = np.array(df['B10'])
         img_NDVI = np.array(df['NDVI'])
         img_B10 = img_B10.reshape((self.shapes[10][0], self.shapes[10][1]))
@@ -143,14 +154,10 @@ class SmarTrees():
         and returns a dataframe with 2 colonnes, ndvi and kelvin
         '''
         df = self.get_3bands_df()
-
         b4 = df['B4']
         b5 = df['B5']
-
         ndvi = (b5 - b4) / (b5 + b4)
-
         df1 = pd.DataFrame((ndvi), columns=[f'NDVI'])
-
         df_new = df[['B10']].join(df1)
 
         return df_new
@@ -159,7 +166,7 @@ class SmarTrees():
 # Display map folium of temperature and NDVI
 
     def display_folium_map(self, min_temp=20, max_temp=40):
-
+        """ Displays folium map of Temp (Celsius) and NDVI with scales"""
         linearndvi = cmp.LinearColormap(
             ['#d73027', '#fc8d59', '#fee08b', '#d9ef8b', '#91cf60', '#1a9850'],
             vmin=-1,
