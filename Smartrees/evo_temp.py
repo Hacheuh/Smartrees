@@ -11,16 +11,18 @@ instanciation of class needs dict of datas from image collection selected'''
 '''minimal code to get informations :
 import Smartrees.evo_temp as smet
 import Smartrees.date_to_data as smdtd
-dict_df=smdtd.Datas().get_data_from_dates()
-dat=smet.Temporal(dict_df)
+datas=smdtd.Datas()
+dict_df=datas.get_data_from_dates()
+dat=smet.Temporal(dict_df,datas.shapes)
 dat.get_evo_allplot();
 dat.correlation_plot();
 dat.simple_pred_hotspot();
 '''
 
 class Temporal() :
-    def __init__(self,dict_df):
+    def __init__(self,dict_df,shape=(377,277)):
         self.dict_df=dict_df
+        self.shape=shape
 
     def evo_temp(self, dict_df : dict , column : str = 'NDVI'):
         ''' Create a dataframe with temporal evolution of features for each pixels, as well as the evolution of derivative
@@ -214,6 +216,48 @@ class Temporal() :
         df.rename(columns={0: 'temp',1:'ndvi'},inplace=True)
         return df
 
+    def unite_data(self,df,feature):
+        ''' concatenating df columns into one big column'''
+        arr=np.array(df)
+        arr=arr.reshape((df.shape[0]*df.shape[1],))
+        return pd.DataFrame(arr,columns=[feature])
+
+    def save_all_corr(city='Nice'):
+        """ function saving all correlation plot for base metric and raw diff metrics by seasons and by months"""
+        print('Saving started')
+        for i,j in zip([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],['winter','spring','summer','autumn']):
+            df=self.unite_oneY(months=i)
+            plt.subplots(figsize=(15,10))
+            plt.title(f'Raw diff. correlation : {j}')
+            sns.scatterplot(df['temp'],df['ndvi'])
+            plt.savefig(f'output_images/{city}_{j}_raw_diff_corr_1Y.png')
+            plt.close()
+
+            plt.subplots(figsize=(15,10))
+            plt.title(f'Base correlation : {j}')
+            sns.scatterplot(self.unite_data(temp.iloc[:,smet.select_month(i,temp.columns)],'temp')['temp']\
+                            ,self.unite_data(ndvi.iloc[:,smet.select_month(i,ndvi.columns)],'ndvi')['ndvi'])
+            plt.savefig(f'output_images/{city}_{j}_corr_temp_ndvi.png')
+            plt.close()
+
+        print('Seasons computed')
+
+        for i in [[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12]]:
+            df=self.unite_oneY(months=i)
+            plt.subplots(figsize=(15,10))
+            plt.title(f'Raw diff. correlation : month {i[0]}')
+            sns.scatterplot(df['temp'],df['ndvi'])
+            plt.savefig(f'output_images/{city}_month_{i[0]}_raw_diff_corr_1Y.png')
+            plt.close()
+
+            plt.subplots(figsize=(15,10))
+            plt.title(f'Base correlation : month {i[0]}')
+            sns.scatterplot(self.unite_data(temp.iloc[:,smet.select_month(i,temp.columns)],'temp')['temp']\
+                            ,self.unite_data(ndvi.iloc[:,smet.select_month(i,ndvi.columns)],'ndvi')['ndvi'])
+            plt.savefig(f'output_images/{city}_month_{i[0]}_corr_temp_ndvi.png')
+            plt.close()
+        print('Saving done')
+
 
     """ predictions with specific index"""
 
@@ -236,7 +280,7 @@ class Temporal() :
         index=temp.loc[:,date].map(custom_index_temp)*ndvi.loc[:,date].map(custom_index_ndvi)
         Tree_necessity_index=(index+abs(min(index)))/(max(index)-min(index))*100
 
-        def fill_zeros(data=Tree_necessity_index,size=377*277):
+        def fill_zeros(data=Tree_necessity_index,size=self.shape[0]*self.shape[1]):
             df=pd.DataFrame(data.copy())
             true_size=len(df)
             df['indice']=df.index
@@ -247,7 +291,7 @@ class Temporal() :
         Tree_necessity_index_filled =fill_zeros()
 
         plot=plt.subplots(figsize=(15,10))
-        im=np.array(Tree_necessity_index_filled).reshape((377,277))
+        im=np.array(Tree_necessity_index_filled).reshape(self.shape)
         plt.imshow(im, cmap='viridis')
         plt.title('Tree necessity index')
         plt.colorbar()
