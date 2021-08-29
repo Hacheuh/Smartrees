@@ -38,6 +38,7 @@ selenium
 imgkit
 js2py
 matplotlib
+seaborn
 
 # site
 streamlit
