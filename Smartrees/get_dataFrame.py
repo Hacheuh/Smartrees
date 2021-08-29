@@ -259,4 +259,4 @@ class SmarTrees():
         temper.columns = ['Norm_Temp', 'NDVI']
         if keepnan == True:
             return temper
-        return temper.dropna()
+        return temper.dropna(), self.shapes

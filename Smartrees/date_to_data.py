@@ -20,6 +20,13 @@ data_getter=Datas()
 dict_of_df=data_getter.get_data_from_dates()
 temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = get_evols(self, dict_of_dfs)
 """
+""" PLOTTING ONE DATAFRAME OF DICT OF DFS : example
+
+img=dict_of_dfs['LANDSAT/LC08/C01/T1_TOA/LC08_198030_20200731']['NDVI']
+img_arr=np.array(img).reshape((get_data.shapes[4][0],get_data.shapes[4][1]))
+plt.imshow(img_arr)
+
+"""
 
 
 class Datas():
@@ -126,16 +133,28 @@ class Datas():
                              pos=self.pos,
                              width=self.width,
                              sea_filtering=self.sea_filtering_d)
-            output[name] = data.z_temperature()
+            output[name], self.shapes = data.z_temperature()
             i += 1
 
         return output
+
+
+#--------------------------------------------------------------------------------------------------
+
+    def try_widths(self, df):
+        try:
+            dict_df = self.get_data_from_list(df)
+        except AttributeError:
+            print('width not suited, halving it')
+            self.width = [self.width[0] * 0.75, self.width[1] * 0.75]
+            dict_df = self.try_widths(df)
+        return dict_df
 
     def get_data_from_dates(self):
         """ Produce dict of NDVI and Norm_temp dataframes with their names as keys"""
         df = self.get_list_from_dates()
         df = self.filter_list(df)
-        dict_df = self.get_data_from_list(df)
+        dict_df = self.try_widths(df)
 
         if self.saving_files == 1:
             print('saving dict of dfs')
@@ -146,7 +165,7 @@ class Datas():
     def sea_pixel(self, Tlim=297.5, NDVIlim=0):
         """ Define Sea pixels ONCE AND FOR ALL and list in dataframe self.sea_pixel if pixels are earth 1 or sea 0
         based on Tlim and NDVIlim arguments"""
-        #--------------------------------------------------------------------------------------------------
+
         #Creation du DF B4,B,B10 sur l'image de référence
 
         df_B4 = ee.Image(
