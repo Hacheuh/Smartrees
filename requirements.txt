@@ -42,5 +42,7 @@ matplotlib
 # site
 streamlit
 PIL
+glob
+
 #date
 datetime
