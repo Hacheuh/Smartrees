@@ -51,9 +51,9 @@ class SmarTrees():
             sea_filtering=0):
         " Init fonction of class SmarTrees"
         self.ee_image = ee_image
+        self.pos = pos
         self.corner1 = [pos[0] + width[0] / 2, pos[1] + width[1] / 2]
         self.corner2 = [pos[0] - width[0] / 2, pos[1] - width[1] / 2]
-        self.pos = pos
         self.aoi = self.get_aoi()  # Region polygone utilisée par earth engine
         self.shapes = {
         }  # dictionnaire de dimensions des images (la clé correspond à la bande utilisée sur l'image ee)
