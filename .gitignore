@@ -9,3 +9,4 @@ notebooks/
 .env
 notebooks/
 output_images/*.png
+*.ipynb
