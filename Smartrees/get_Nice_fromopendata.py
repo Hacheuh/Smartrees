@@ -7,6 +7,7 @@ from IPython.display import Image, display
 import geehydro
 import os
 def get_trees_coordinates(date=2019):
+    # Give trees coordinates
     csvpath = f"ev-arbre-opendata-{date}.csv"
     p = os.path.join("Smartrees/raw_data",csvpath)
     trees = pd.read_csv(p,sep = ';')
@@ -25,6 +26,7 @@ def tree_maps(location = [43.6961,7.27178],zoom=10,date=2019):
     return Nice
 
 def get_vege_coordinates(date = 2020):
+    # Give coordinates of vege in Nice
     vege2020 = pd.read_csv(f"Smartrees/raw_data/ev-inventaire-opendata-{date}.csv",sep = ';')
     vege2020 = vege2020.geometry.map(lambda x : eval(x))
     multivege20 = [coords['coordinates'] for coords in vege2020 if coords['type'] == 'MultiPolygon']
@@ -32,6 +34,7 @@ def get_vege_coordinates(date = 2020):
     return {"simplepoly" : vege20,"multipoly" : multivege20}
 
 def vege_and_tree():
+    # create a map with vege and trees
     Nice = tree_maps(location = [43.6961,7.27178],zoom=10,date=2020,set_options = 'SATELLITE')
     print(Nice)
     data = get_vege_coordinates()
@@ -44,10 +47,12 @@ def vege_and_tree():
     return Nice
 
 def show_trees_map(date=2019):
+    #show a tree map
     Nice = tree_maps(date=date)
     display(Nice)
 
 
 def show_vege_and_trees_map():
+    #show a vege and tree map
     Nice = vege_and_tree()
     display(Nice)
