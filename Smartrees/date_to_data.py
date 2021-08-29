@@ -53,7 +53,10 @@ class Datas():
 
         self.scale = 30
         self.aoi = self.get_aoi()
-        self.sea_pixel()
+        if sea_filtering == 1:
+            self.sea_pixel()
+        else:
+            self.sea_pixels = None
         self.saving_files = saving_files
 
     def get_aoi(self):
@@ -117,7 +120,12 @@ class Datas():
             if i % 10 == 0:
                 print(f"file {i} / {df['id'].shape[0]}")
 
-            data = SmarTrees(name, scale=self.scale, sea_pixels=self.sea_pixels, pos= self.pos, width= self.width, sea_filtering=self.sea_filtering_d)
+            data = SmarTrees(name,
+                             scale=self.scale,
+                             sea_pixels=self.sea_pixels,
+                             pos=self.pos,
+                             width=self.width,
+                             sea_filtering=self.sea_filtering_d)
             output[name] = data.z_temperature()
             i += 1
 
