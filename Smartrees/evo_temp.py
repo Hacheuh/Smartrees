@@ -224,6 +224,7 @@ class Temporal() :
 
     def save_all_corr(self, city='Nice'):
         """ function saving all correlation plot for base metric and raw diff metrics by seasons and by months"""
+        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = self.get_evo_allfeat()
         print('Saving started')
         for i,j in zip([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],['winter','spring','summer','autumn']):
             df=self.unite_oneY(months=i)
