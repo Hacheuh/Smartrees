@@ -224,9 +224,16 @@ class Temporal() :
 
     def save_all_corr(self, city='Nice'):
         """ function saving all correlation plot for base metric and raw diff metrics by seasons and by months"""
+        temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi = self.get_evo_allfeat()
         print('Saving started')
         for i,j in zip([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],['winter','spring','summer','autumn']):
-            df=self.unite_oneY(months=i)
+            try :
+                df=self.unite_oneY(months=i)
+            except IndexError :
+                print(f'Error for {j}')
+                print('''/!\ The date ranges you chose is not big enough to contain at least 2 seasons at one year interval\n
+                    Carefully check that your chosen range is at least 2 years wide ''')
+                return None
             plt.subplots(figsize=(15,10))
             plt.title(f'Raw diff. correlation : {j}')
             sns.scatterplot(df['temp'],df['ndvi'])
@@ -235,15 +242,21 @@ class Temporal() :
 
             plt.subplots(figsize=(15,10))
             plt.title(f'Base correlation : {j}')
-            sns.scatterplot(self.unite_data(temp.iloc[:,smet.select_month(i,temp.columns)],'temp')['temp']\
-                            ,self.unite_data(ndvi.iloc[:,smet.select_month(i,ndvi.columns)],'ndvi')['ndvi'])
+            sns.scatterplot(self.unite_data(temp.iloc[:,select_month(i,temp.columns)],'temp')['temp']\
+                            ,self.unite_data(ndvi.iloc[:,select_month(i,ndvi.columns)],'ndvi')['ndvi'])
             plt.savefig(f'output_images/{city}_{j}_corr_temp_ndvi.png')
             plt.close()
 
         print('Seasons computed')
 
         for i in [[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12]]:
-            df=self.unite_oneY(months=i)
+            try :
+                df=self.unite_oneY(months=i)
+            except IndexError :
+                print(f'Error for month {i[0]}')
+                print('''/!\ The date ranges you chose is not big enough to contain at least 2 times one or several months
+                    at one year interval\n
+                    Carefully check that your chosen range is at least 2 years wide ''')
             plt.subplots(figsize=(15,10))
             plt.title(f'Raw diff. correlation : month {i[0]}')
             sns.scatterplot(df['temp'],df['ndvi'])
@@ -252,8 +265,8 @@ class Temporal() :
 
             plt.subplots(figsize=(15,10))
             plt.title(f'Base correlation : month {i[0]}')
-            sns.scatterplot(self.unite_data(temp.iloc[:,smet.select_month(i,temp.columns)],'temp')['temp']\
-                            ,self.unite_data(ndvi.iloc[:,smet.select_month(i,ndvi.columns)],'ndvi')['ndvi'])
+            sns.scatterplot(self.unite_data(temp.iloc[:,select_month(i,temp.columns)],'temp')['temp']\
+                            ,self.unite_data(ndvi.iloc[:,select_month(i,ndvi.columns)],'ndvi')['ndvi'])
             plt.savefig(f'output_images/{city}_month_{i[0]}_corr_temp_ndvi.png')
             plt.close()
         print('Saving done')

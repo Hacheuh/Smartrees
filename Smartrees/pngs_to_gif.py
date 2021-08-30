@@ -28,7 +28,7 @@ def output_images(df,name,shape):
     img_B10 = np.array(df['Norm_Temp'])
     img_NDVI = np.array(df['NDVI'])
     img_B10 = img_B10.reshape(shape) #  (377, 277) va sostituito con data.shapes['10'][:2]
-    img_NDVI = img_NDVI.reshape(shape) 
+    img_NDVI = img_NDVI.reshape(shape)
     plt.figure(figsize=(15, 10))
     plt.imshow(img_B10, cmap='coolwarm')
     plt.savefig(f'output_images/{name}_Temp.png')
@@ -50,7 +50,7 @@ def fill_value(data,size,value_ndvi,value_temp):
     return datframe
 
 def create_gif_temp(pathname):
-    '''This function transforms Temp pngs into a gif, and saves it    
+    '''This function transforms Temp pngs into a gif, and saves it
     '''
     frames = []
     imgs = glob.glob(pathname+"/*_Temp.png")
@@ -67,7 +67,7 @@ def create_gif_temp(pathname):
 
 
 def create_gif_NDVI(pathname):
-    '''This function transforms pngs into a gif, and saves it    
+    '''This function transforms pngs into a gif, and saves it
     '''
     frames = []
     imgs = glob.glob(pathname+"/*_NDVI.png")
@@ -81,14 +81,15 @@ def create_gif_NDVI(pathname):
                     duration=650, loop=0)
     return None
 
-def create_gifs_fromdf(datas_obj):
-    dict_df=datas_obj.get_data_from_dates()
+def create_gifs_fromdf(datas_obj, city='Nice', already_loaded=0, dict_df=None):
+    if not already_loaded:
+        dict_df=datas_obj.get_data_from_dates()
     shapes=datas_obj.shapes[10][:2]
     i=0
     for key in dict_df:
         i=i+1
         df=fill_value(dict_df[key],shapes[0]*shapes[1],-1, 5)
-        output_images(df, f'Nice_{i}',shapes)
+        output_images(df, f'{city}_{i}',shapes)
     create_gif_NDVI('output_images')
     create_gif_temp('output_images')
     return None
