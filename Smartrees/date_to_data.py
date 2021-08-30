@@ -59,7 +59,7 @@ class Datas():
         self.corner2 = [pos[0] - width[0] / 2, pos[1] - width[1] / 2]
         self.pos = pos
         self.width = width
-
+        self.tronc = 'LANDSAT/LC08/C01/T1_TOA/LC08_'
         self.scale = 30
         self.aoi = self.get_aoi()
         if sea_filtering == 1:
@@ -82,6 +82,9 @@ class Datas():
         """ gets a dataframe of ee_Images of the position pos taken between date_start and date_stop """
         df_image_list = get_meta_data(self.date_start, self.date_stop,
                                       self.pos)
+
+        # Creating features dict
+
         return df_image_list.sort_values('Date')
 
     def filter_list(self, df):
@@ -141,8 +144,12 @@ class Datas():
                 output[name], self.shapes = data.z_temperature()
             else:
                 output[name], self.shapes, meanT, std_T = data.z_temperature()
-                output[name]['mean_T'] = meanT
-                output[name]['std_T'] = std_T
+                index_id = self.df_features[self.df_features['id'] ==
+                                            name].index
+                df.loc[index_id, 'mean_T'] = 1
+                self.df_features.loc[index_id, 'mean_T'] = meanT
+                self.df_features.loc[index_id, 'std_T'] = std_T
+
             i += 1
 
         return output
@@ -163,12 +170,17 @@ class Datas():
         """ Produce dict of NDVI and Norm_temp dataframes with their names as keys"""
         df = self.get_list_from_dates()
         df = self.filter_list(df)
+        self.list_of_eeimages = df
+        self.df_features = df[['id']]
+        self.df_features.loc[:, 'mean_T'] = np.nan
+        self.df_features.loc[:, 'std_T'] = np.nan
+
         dict_df = self.try_widths(df)
 
         if self.saving_files == 1:
             print('saving dict of dfs')
             self.save_dataframes(dict_df)
-
+            self.save_features_df(self.df_features)
         return dict_df
 
     def sea_pixel(self, Tlim=297.5, NDVIlim=0):
@@ -237,13 +249,14 @@ class Datas():
     def save_dataframes(self, dict_of_dfs):
         """ Saves NDVI and Norm_temp dataframes as csv fils in raw_data"""
         dict_to_write = dict_of_dfs[list(dict_of_dfs.keys())[0]]
-        dict_to_write['ee_Image'] = list(dict_of_dfs.keys())[0]
+        dict_to_write['ee_Image'] = list(dict_of_dfs.keys())[0][
+            29:]  # le nom sans le tronc commun self.tronc
         dict_to_write.to_csv(
             f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv'
         )
         for name in list(dict_of_dfs.keys())[1:]:
             dict_to_write = dict_of_dfs[name]
-            dict_to_write['ee_Image'] = name
+            dict_to_write['ee_Image'] = name[29:]
             dict_to_write.to_csv(
                 f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv',
                 mode='a',
@@ -262,6 +275,13 @@ class Datas():
             df.to_csv(
                 f'./../raw_data/DF_{names[i]}_perc_{perc}_scale_{scale}_pos_{pos}_{date_start}-{date_stop}.csv'
             )
+        return None
+
+    def save_features_df(self, df):
+        """ Saves working dataframes as csv fils in raw_data"""
+        df.to_csv(
+            f'./../raw_data/DF_Features_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv'
+        )
         return None
 
     def get_evols(self, dict_of_dfs):
