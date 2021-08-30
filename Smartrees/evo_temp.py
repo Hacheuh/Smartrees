@@ -222,7 +222,7 @@ class Temporal() :
         arr=arr.reshape((df.shape[0]*df.shape[1],))
         return pd.DataFrame(arr,columns=[feature])
 
-    def save_all_corr(city='Nice'):
+    def save_all_corr(self, city='Nice'):
         """ function saving all correlation plot for base metric and raw diff metrics by seasons and by months"""
         print('Saving started')
         for i,j in zip([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],['winter','spring','summer','autumn']):
