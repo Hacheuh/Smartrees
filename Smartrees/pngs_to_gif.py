@@ -1,10 +1,16 @@
 from PIL import Image
 import glob
 import ee
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# to make this code work, you have to create a folder named "output_gif" and another folder named "output_images". 
+# in the first folder we are going to save the pngs images, in the second we will save  
+# so in the terminal run the following lines:
+# mkdir output_gif
+# mkdir output_images
 
 def output_images(df,name,shape):
     img_B10 = np.array(df['Norm_Temp'])
@@ -56,8 +62,7 @@ def create_gif_NDVI(pathname):
     for i in imgs:
         new_frame = Image.open(i)
         frames.append(new_frame)
-    print(frames)
-    # Save into a GIF file that loops forever
+    print(frames)        
     frames[0].save('output_gif/NDVI_gif.gif', format='GIF',
                     append_images=frames[1:],
                     save_all=True,
