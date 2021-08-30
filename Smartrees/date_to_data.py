@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import geemap
 import geehydro
+import requests
 """ This class is used to get the global dataframes from images of pos (base is Nice)
 between the date_start and date_stop. The images are chosen at a base scale of 30
 and only images with a cloud coverage inferior to perc (base 20) are kept
@@ -146,7 +147,6 @@ class Datas():
                 output[name], self.shapes, meanT, std_T = data.z_temperature()
                 index_id = self.df_features[self.df_features['id'] ==
                                             name].index
-                df.loc[index_id, 'mean_T'] = 1
                 self.df_features.loc[index_id, 'mean_T'] = meanT
                 self.df_features.loc[index_id, 'std_T'] = std_T
 
@@ -170,17 +170,23 @@ class Datas():
         """ Produce dict of NDVI and Norm_temp dataframes with their names as keys"""
         df = self.get_list_from_dates()
         df = self.filter_list(df)
-        self.list_of_eeimages = df
+
+        self.list_of_eeimages = df.copy()
         self.df_features = df[['id']]
+
         self.df_features.loc[:, 'mean_T'] = np.nan
         self.df_features.loc[:, 'std_T'] = np.nan
 
         dict_df = self.try_widths(df)
 
+        if self.return_stats == 1:
+            self.add_weather_features()
+
         if self.saving_files == 1:
             print('saving dict of dfs')
             self.save_dataframes(dict_df)
             self.save_features_df(self.df_features)
+
         return dict_df
 
     def sea_pixel(self, Tlim=297.5, NDVIlim=0):
@@ -295,3 +301,76 @@ class Datas():
                                raw_diff_ndvi, self.perc, self.scale, self.pos,
                                self.date_start, self.date_stop)
         return temp, div_temp, raw_diff_temp, ndvi, div_ndvi, raw_diff_ndvi
+
+    def get_response(self, date_query, time_image):
+        y = date_query[0:4]
+        m = date_query[5:7]
+        d = date_query[8:]
+        url = f"https://www.metaweather.com/api/location/{self.woeid}/{y}/{m}/{d}/"
+
+        response = requests.get(url).json()
+
+        def time_dec(time):
+            h = int(time[0:2])
+            m = int(time[3:5])
+            s = int(time[6:8])
+            time_dec = h + m / 60 + s / 3600
+            return time_dec
+
+        temp_list = []
+        for i in range(len(response)):
+            date = response[i]['created'][0:10]
+            if date == date_query:
+                time = response[i]['created'][11:19]
+                temp_list.append(time_dec(time))
+
+        time_ref_dec = time_dec(time_image)
+
+        temp_list = [abs(value - time_ref_dec) for value in temp_list]
+        for i, time in enumerate(temp_list):
+            if time == min(temp_list):
+                weather_measurement = response[i]
+        return weather_measurement
+
+    def get_woeid(self):
+        latt = self.pos[1]
+        long = self.pos[0]
+        url = f'https://www.metaweather.com/api/location/search/?lattlong={latt},{long}'
+        response = requests.get(url).json()
+        city = response[0]
+        print(f"{city['title']}: {city['woeid']} ({city['latt_long']})")
+
+        self.woeid = city['woeid']
+        return None
+
+    def create_weather_features(self):
+        self.weather_features = [
+            'weather_state_name', 'min_temp', 'max_temp', 'the_temp',
+            'wind_speed', 'wind_direction', 'air_pressure', 'humidity',
+            'visibility', 'predictability'
+        ]
+        self.df_features.loc[:, 'weather_state_name'] = np.nan
+        self.df_features.loc[:, 'min_temp'] = np.nan
+        self.df_features.loc[:, 'max_temp'] = np.nan
+        self.df_features.loc[:, 'the_temp'] = np.nan
+        self.df_features.loc[:, 'wind_speed'] = np.nan
+        self.df_features.loc[:, 'wind_direction'] = np.nan
+        self.df_features.loc[:, 'air_pressure'] = np.nan
+        self.df_features.loc[:, 'humidity'] = np.nan
+        self.df_features.loc[:, 'visibility'] = np.nan
+        self.df_features.loc[:, 'predictability'] = np.nan
+        return None
+
+    def add_weather_features(self):
+        self.create_weather_features()
+        self.get_woeid()
+        self.test1 = self.df_features.copy()
+        for index in self.list_of_eeimages.index:
+
+            time_image = self.list_of_eeimages.loc[index, 'Time']
+            date_query = self.list_of_eeimages.loc[index, 'Date']
+            weather_measurement = self.get_response(date_query, time_image)
+            for name in self.weather_features:
+                self.df_features.loc[index, name] = weather_measurement[name]
+
+        return None
