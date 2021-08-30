@@ -27,6 +27,7 @@ six >=1.14
 joblib
 memoized-property
 termcolor
+glob
 
 #get Temperature
 earthengine-api
@@ -42,6 +43,7 @@ seaborn
 # site
 streamlit
 PIL
+glob
 
 #date
 datetime
