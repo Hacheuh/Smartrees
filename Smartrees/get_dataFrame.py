@@ -39,16 +39,16 @@ df=data.get_3bands_df()
 
 class SmarTrees():
     def __init__(
-            self,
-            ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
-            pos=[
-                7.25, 43.7
-            ],  #Pos of images, if 0, will be calculated as mean of corners
-            width=[0.1,
-                   0.1],  # Width in longitude and lattitude of the AOI region
-            scale=30,
-            sea_pixels=None,
-            sea_filtering=0):
+        self,
+        ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729',
+        pos=[7.25, 43.7
+             ],  #Pos of images, if 0, will be calculated as mean of corners
+        width=[0.1, 0.1],  # Width in longitude and lattitude of the AOI region
+        scale=30,
+        sea_pixels=None,
+        sea_filtering=0,
+        return_stats=0
+    ):  # return mean and std of temperature before normalization or not
         " Init fonction of class SmarTrees"
         self.ee_image = ee_image
         self.corner1 = [pos[0] + width[0] / 2, pos[1] + width[1] / 2]
@@ -60,7 +60,7 @@ class SmarTrees():
         self.date = ee_image[-8:]  # Date récupérée d'après le nom du fichier
         self.scale = 30
         self.sea_filtering = sea_filtering
-
+        self.return_stats = return_stats  # return mean and std of temperature before normalization or not
         self.sea_pixels = sea_pixels
 
     def get_aoi(self):
@@ -258,5 +258,10 @@ class SmarTrees():
         temper['Norm_Temp'] = temper['Norm_Temp'].map(z_score)
         temper.columns = ['Norm_Temp', 'NDVI']
         if keepnan == True:
-            return temper
+            if self.return_stats == 1:
+                return temper, self.shapes, means, stds
+            return temper, self.shapes
+        if self.return_stats == 1:
+            return temper.dropna(), self.shapes, means, stds
+
         return temper.dropna(), self.shapes

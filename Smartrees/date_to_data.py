@@ -43,7 +43,9 @@ class Datas():
         sea_filtering=1,  # Filtering sea pixels 1 , not 0
         scale=30,  # Scale of images
         Unique_days=1,  # Accounting for days that are present in double
-        saving_files=False):  # Do we save files in raw_data
+        saving_files=False,
+        return_stats=0  # return mean and std of temperature before normalization or not
+    ):  # Do we save files in raw_data
         # Datas relevant variables
 
         self.date_start = date_start
@@ -65,6 +67,7 @@ class Datas():
         else:
             self.sea_pixels = None
         self.saving_files = saving_files
+        self.return_stats = return_stats
 
     def get_aoi(self):
         "Get The polygon region for ee as a Polygone"
@@ -132,8 +135,14 @@ class Datas():
                              sea_pixels=self.sea_pixels,
                              pos=self.pos,
                              width=self.width,
-                             sea_filtering=self.sea_filtering_d)
-            output[name], self.shapes = data.z_temperature()
+                             sea_filtering=self.sea_filtering_d,
+                             return_stats=self.return_stats)
+            if self.return_stats == 0:
+                output[name], self.shapes = data.z_temperature()
+            else:
+                output[name], self.shapes, meanT, std_T = data.z_temperature()
+                output[name]['mean_T'] = meanT
+                output[name]['std_T'] = std_T
             i += 1
 
         return output
@@ -227,11 +236,15 @@ class Datas():
 
     def save_dataframes(self, dict_of_dfs):
         """ Saves NDVI and Norm_temp dataframes as csv fils in raw_data"""
-        dict_of_dfs[list(dict_of_dfs.keys())[0]].to_csv(
+        dict_to_write = dict_of_dfs[list(dict_of_dfs.keys())[0]]
+        dict_to_write['ee_Image'] = list(dict_of_dfs.keys())[0]
+        dict_to_write.to_csv(
             f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv'
         )
         for name in list(dict_of_dfs.keys())[1:]:
-            dict_of_dfs[name].to_csv(
+            dict_to_write = dict_of_dfs[name]
+            dict_to_write['ee_Image'] = name
+            dict_to_write.to_csv(
                 f'./../raw_data/Regroupment_of_dataframes_perc_{self.perc}_scale_{self.scale}_pos_{self.pos}_{self.date_start}-{self.date_stop}.csv',
                 mode='a',
                 header=False)
