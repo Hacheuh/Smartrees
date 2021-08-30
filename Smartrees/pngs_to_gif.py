@@ -7,10 +7,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # to make this code work, you have to create a folder named "output_gif" and another folder named "output_images". 
-# in the first folder we are going to save the pngs images, in the second we will save  
+# in the first folder we are going to save the pngs images, in the second we will save the GIFs
+
 # so in the terminal run the following lines:
 # mkdir output_gif
 # mkdir output_images
+
+# code minimal pour recuperer les images GIF
+
+'''
+import Smartrees.pngs_to_gif as smptg
+import Smartrees.date_to_data as smdtd
+
+datas=smdtd.Datas()
+smptg.create_gifs_fromdf(datas)
+''' 
+
 
 def output_images(df,name,shape):
     img_B10 = np.array(df['Norm_Temp'])

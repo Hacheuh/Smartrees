@@ -8,5 +8,6 @@ notebooks/
 **/__pycache__/
 .env
 notebooks/
-output_images/
 output_gif/
+output_images/
+
