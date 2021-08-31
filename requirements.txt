@@ -42,8 +42,10 @@ seaborn
 
 # site
 streamlit
+streamlit_folium
 PIL
 glob
+
 
 #date
 datetime
