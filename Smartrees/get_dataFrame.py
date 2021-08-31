@@ -178,12 +178,12 @@ class SmarTrees():
 
 # Display map folium of temperature and NDVI
 
-    def display_folium_map(self, min_temp=20, max_temp=40):
+    def display_folium_map(self, min_temp=20, max_temp=40, minNDVI=-1, maxNDVI=1):
         """ Displays folium map of Temp (Celsius) and NDVI with scales"""
         linearndvi = cmp.LinearColormap(
             ['#d73027', '#fc8d59', '#fee08b', '#d9ef8b', '#91cf60', '#1a9850'],
-            vmin=-1,
-            vmax=1,
+            vmin=minNDVI,
+            vmax=maxNDVI,
             caption='NDVI - Vegetation index'  #Caption for Color scale or Legend
         )
 
@@ -201,7 +201,7 @@ class SmarTrees():
         b10 = image.select('B10')
         ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
         temp = b10.subtract(273.15)
-
+        print(temp.max)
         mapNice = folium.Map(location=[self.pos[1], self.pos[0]],
                              zoom_start=12)
         mapNice.addLayer(temp, {

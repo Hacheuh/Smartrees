@@ -55,4 +55,7 @@ pypi:
 	@twine upload dist/* -u $(PYPI_USERNAME)
 
 run_streamlit:
-    streamlit run app.py
+	@streamlit run api/app.py
+
+run_api:
+	@uvicorn api.fast:app --reload											
