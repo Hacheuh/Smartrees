@@ -211,6 +211,10 @@ class SmarTrees():
         }, 'Temp')
         mapNice.addLayer(
             ndvi, {
+                'min':
+                -0.5,
+                'max':
+                0.7,
                 'palette': [
                     '#d73027', '#fc8d59', '#fee08b', '#d9ef8b', '#91cf60',
                     '#1a9850'
