@@ -43,7 +43,7 @@ seaborn
 streamlit
 streamlit_folium
 Pillow
-glob3
+glob2
 os
 
 
