@@ -42,7 +42,7 @@ seaborn
 # site
 streamlit
 streamlit_folium
-PIL
+Pillow
 glob
 os
 
