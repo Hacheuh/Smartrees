@@ -7,7 +7,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-ee.Authenticate()
+from google.auth import compute_engine
+
+credentials = compute_engine.Credentials(scopes=['https://www.googleapis.com/auth/earthengine'])
+ee.Initialize(credentials)
+
+
 
 # alternative icon image
 icon = Image.open("api/imgs/SmarTree.JPG")
