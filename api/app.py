@@ -151,12 +151,12 @@ st.markdown("""
 if st.button('click me to generate and save gifs'):
     # print is visible in the server output, not in the page
     print('button clicked!')
-    try:
+    '''try:
         print('ok')
         os.mkdir('output_gif')
         os.mkdir('output_images')
     except FileExistsError:
-        pass
+        pass'''
 
     datas=smdtd.Datas(pos = pos_c, date_start=date0, date_stop=date1)
     smptg.create_gifs_fromdf(datas)
