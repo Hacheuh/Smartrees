@@ -18,11 +18,14 @@ import matplotlib.pyplot as plt
 '''
 import Smartrees.pngs_to_gif as smptg
 import Smartrees.date_to_data as smdtd
+import os
+
+os.mkdir('output_gif')
+os.mkdir('output_images')
 
 datas=smdtd.Datas()
 smptg.create_gifs_fromdf(datas)
 ''' 
-
 
 def output_images(df,name,shape):
     img_B10 = np.array(df['Norm_Temp'])
@@ -74,7 +77,8 @@ def create_gif_NDVI(pathname):
     for i in imgs:
         new_frame = Image.open(i)
         frames.append(new_frame)
-    print(frames)        
+    print(frames)  
+
     frames[0].save('output_gif/NDVI_gif.gif', format='GIF',
                     append_images=frames[1:],
                     save_all=True,

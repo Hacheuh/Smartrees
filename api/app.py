@@ -3,11 +3,25 @@ from PIL import Image
 from streamlit_folium import folium_static
 import ee
 from datetime import timedelta
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 # alternative icon image
 icon = Image.open("api/imgs/SmarTree.JPG")
 
 st.set_page_config(layout='centered', page_title='SmarTrees', page_icon=icon)
+
+def _max_width_(prcnt_width:int = 25):
+    max_width_str = f"max-width: {prcnt_width}%;"
+    st.markdown(f""" 
+                <style> 
+                .reportview-container .main .block-container{{{max_width_str}}}
+                </style>    
+                """, 
+                unsafe_allow_html=True,
+    )
+
 
 CSS = """
 h1 {
@@ -29,42 +43,49 @@ st.write(f'<style>{CSS}</style>', unsafe_allow_html=True)
 
 
 st.markdown("""
-    # SmarTrees
-
-    ## Get predictions on where you need to plant trees!
-
-    ### Predict average temperature based on potential Vegetation Index (NDVI) that could be obtained by planting trees 
+    # SmarTrees 
+    ## 'Let trees cool down your city!'
+    ###
+    
+    #### Choose a city and a date, discover in which areas trees are needed the most
+    ####
 """)
 
 # input city name
-pos = st.text_input('select a city name', '7.25, 43.7')
-st.write('You have selected', pos)
+pos = st.text_input('Select city coordinates', '7.25, 43.7')
+
+col1, col2 = st.columns(2)
+
 
 # input start date
-date0 = st.text_input('Beginning date', '2017-01-31')
-st.write('You have selected', date0)
+date0 = col1.text_input('Beginning date', '2019-07-01')
 
 #input end date
-date1 = st.text_input('End date', '')
-st.write('You have selected', date1)
+date1 = col2.text_input('End date', '2019-08-31')
 
 st.markdown("""
-    ## Cartographic representation
-
-    ### 1...
-    ## load results maps n°1
+    ## Interactive map of temperature and vegetation index
 """)
 
 import Smartrees.get_dataFrame as smgdf
 import Smartrees.ee_query as smeq
 ee.Initialize()
 Pos = pos.split(',')
+pos_c=[float(Pos[0]),float(Pos[1])]
 close_date = smeq.closest_image(date0, formatDate = 1, pos= tuple([float(item) for item in Pos]))
 
 #st.write(close_date+timedelta(days=1))
 
+
+# affichage gif dans le site 
+import Smartrees.pngs_to_gif as smptg
+import Smartrees.date_to_data as smdtd
+import os 
+
+
+
 df = smeq.get_meta_data(date_start  = str(close_date) , date_stop = str(close_date+timedelta(days=1)), pos = tuple([float(item) for item in Pos]))
-st.write('selected date is ',close_date)
+st.write('Selected date is ',close_date)
 smart=smgdf.SmarTrees(ee_image=df.loc[0,'id'], pos = tuple([float(item) for item in Pos]))
 df1=smart.get_NDVIandKELVIN()
 minNDVI=df1['NDVI'].min()
@@ -78,6 +99,67 @@ folium_static(m)
 
 
 st.markdown("""
-    ### 2...
-    ## load results maps n°2
+    ## Areas of interest
+    #### Here is the map highlighting the areas that can be improved
+    ###
 """)
+
+col1,col2,col3=st.columns([1,3,1])
+if st.button('Show'):
+    df,shapes = smart.z_temperature()
+    def custom_index_ndvi(x, seuil=0.5):
+        if x<0:
+            return 0
+        elif x>seuil:
+            return 0
+        return 1-x
+
+    def custom_index_temp(x):
+        if x<0:
+            return 0
+        return x
+    temp=df['Norm_Temp']
+    ndvi=df['NDVI']
+    index=temp.map(custom_index_temp)*ndvi.map(custom_index_ndvi)
+    Tree_necessity_index=(index+abs(min(index)))/(max(index)-min(index))*100
+
+    def fill_zeros(data=Tree_necessity_index,size=shapes[10][0]*shapes[10][1]):
+        df=pd.DataFrame(data.copy())
+        true_size=len(df)
+        df['indice']=df.index
+        datframe=pd.DataFrame(np.zeros((size,)),columns={'Tree_index'})
+        datframe.loc[df.index,'Tree_index']=df.iloc[:,0]
+        return datframe
+
+    Tree_necessity_index_filled =fill_zeros()
+
+    fig,ax=plt.subplots(figsize=(5,5))
+    im=np.array(Tree_necessity_index_filled).reshape(shapes[10])
+    s = ax.imshow(im, cmap='viridis')
+    ax.set_title('Tree necessity index')
+    ax.set_xticks([]) 
+    ax.set_yticks([]) 
+    fig.colorbar(s)    
+    col2.pyplot(fig)
+
+st.markdown("""
+    ## GIF viewer 
+""")
+
+
+
+if st.button('click me to generate and save gifs'):
+    # print is visible in the server output, not in the page
+    print('button clicked!')
+    try:
+        print('ok')
+        os.mkdir('output_gif')
+        os.mkdir('output_images')
+    except FileExistsError:
+        pass
+
+    datas=smdtd.Datas(pos = pos_c, date_start=date0, date_stop=date1)
+    smptg.create_gifs_fromdf(datas)
+
+    gif= 'a definir'
+    st.markdown(gif)
