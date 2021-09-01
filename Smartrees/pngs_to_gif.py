@@ -1,7 +1,6 @@
 from PIL import Image
 import glob
 import ee
-import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +18,6 @@ import matplotlib.pyplot as plt
 import Smartrees.pngs_to_gif as smptg
 import Smartrees.date_to_data as smdtd
 import os
-
 os.mkdir('output_gif')
 os.mkdir('output_images')
 
