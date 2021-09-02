@@ -31,11 +31,11 @@ credentials = ee.ServiceAccountCredentials(service_account,'test.json')
 ee.Initialize(credentials)
 os.remove('test.json')
 
-ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729'
+"""ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729'
 img = ee.Image(ee_image).select(['B10'])
 
 credentials = compute_engine.Credentials(scopes=['https://www.googleapis.com/auth/earthengine'])
-ee.Initialize(credentials)
+ee.Initialize(credentials)"""
 
 
 
@@ -186,7 +186,7 @@ st.markdown("""
 """)
 
 if st.button('Display gif'):
-   
+
 
     file_ = open("api/imgs/NDVI_ok.gif", "rb")
     contents = file_.read()
