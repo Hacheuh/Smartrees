@@ -9,6 +9,29 @@ import matplotlib.pyplot as plt
 
 from google.auth import compute_engine
 
+
+import os
+import json
+import ee
+
+# tout ça pour ça
+json_str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS42')
+
+json_data = json.loads(json_str)
+json_data['private_key'] = json_data['private_key'].replace('\\n', '\n')
+
+outfile=open('test.json','w')
+json.dump(json_data,outfile,indent=11)
+outfile.close()
+
+service_account = '9319975735-compute@developer.gserviceaccount.com '
+credentials = ee.ServiceAccountCredentials(service_account,'test.json')
+ee.Initialize(credentials)
+os.remove('test.json')
+
+ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729'
+img = ee.Image(ee_image).select(['B10'])
+
 credentials = compute_engine.Credentials(scopes=['https://www.googleapis.com/auth/earthengine'])
 ee.Initialize(credentials)
 
@@ -76,7 +99,7 @@ st.markdown("""
 
 import Smartrees.get_dataFrame as smgdf
 import Smartrees.ee_query as smeq
-ee.Initialize()
+
 Pos = pos.split(',')
 pos_c=[float(Pos[0]),float(Pos[1])]
 close_date = smeq.closest_image(date0, formatDate = 1, pos= tuple([float(item) for item in Pos]))
