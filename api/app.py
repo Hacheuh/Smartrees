@@ -6,6 +6,8 @@ from datetime import timedelta
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import base64
+
 
 # alternative icon image
 icon = Image.open("api/imgs/SmarTree.JPG")
@@ -46,7 +48,13 @@ st.markdown("""
     # SmarTrees 
     ## 'Let trees cool down your city!'
     ###
-    
+""")
+
+if st.button('Authentify'):
+    ee.Authenticate()
+    #st.echo(ee.Initialize())
+
+st.markdown("""
     #### Choose a city and a date, discover in which areas trees are needed the most
     ####
 """)
@@ -146,20 +154,34 @@ st.markdown("""
     ## GIF viewer 
 """)
 
+if st.button('Display gif'):
+   
 
+    file_ = open("api/imgs/NDVI_ok.gif", "rb")
+    contents = file_.read()
+    data_url = base64.b64encode(contents).decode("utf-8")
+    file_.close()
 
-if st.button('click me to generate and save gifs'):
-    # print is visible in the server output, not in the page
-    print('button clicked!')
-    '''try:
-        print('ok')
-        os.mkdir('output_gif')
-        os.mkdir('output_images')
-    except FileExistsError:
-        pass'''
+    col5,col6=st.columns([2,2])
+    col5.markdown("""
+    #### Gif of Vegetation Index
+    #
+    """)
+    col5.markdown(
+        f'<img src="data:image/gif;base64,{data_url}" alt="cat gif">',
+        unsafe_allow_html=True,
+    )
 
-    datas=smdtd.Datas(pos = pos_c, date_start=date0, date_stop=date1)
-    smptg.create_gifs_fromdf(datas)
+    file_ = open("api/imgs/temp_ok.gif", "rb")
+    contents = file_.read()
+    data2_url = base64.b64encode(contents).decode("utf-8")
+    file_.close()
 
-    gif= 'a definir'
-    st.markdown(gif)
+    col6.markdown("""
+    #### Gif of temperature
+    #
+    """)
+    col6.markdown(
+        f'<img src="data:image/gif;base64,{data2_url}" alt="cat gif">',
+        unsafe_allow_html=True,
+    )
