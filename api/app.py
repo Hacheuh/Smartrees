@@ -9,6 +9,13 @@ import matplotlib.pyplot as plt
 import base64
 
 
+from google.auth import compute_engine
+
+credentials = compute_engine.Credentials(scopes=['https://www.googleapis.com/auth/earthengine'])
+ee.Initialize(credentials)
+
+
+
 # alternative icon image
 icon = Image.open("api/imgs/SmarTree.JPG")
 
@@ -16,11 +23,11 @@ st.set_page_config(layout='centered', page_title='SmarTrees', page_icon=icon)
 
 def _max_width_(prcnt_width:int = 25):
     max_width_str = f"max-width: {prcnt_width}%;"
-    st.markdown(f""" 
-                <style> 
+    st.markdown(f"""
+                <style>
                 .reportview-container .main .block-container{{{max_width_str}}}
-                </style>    
-                """, 
+                </style>
+                """,
                 unsafe_allow_html=True,
     )
 
@@ -45,7 +52,7 @@ st.write(f'<style>{CSS}</style>', unsafe_allow_html=True)
 
 
 st.markdown("""
-    # SmarTrees 
+    # SmarTrees
     ## 'Let trees cool down your city!'
     ###
 """)
@@ -55,6 +62,7 @@ if st.button('Authentify'):
     #st.echo(ee.Initialize())
 
 st.markdown("""
+
     #### Choose a city and a date, discover in which areas trees are needed the most
     ####
 """)
@@ -85,10 +93,10 @@ close_date = smeq.closest_image(date0, formatDate = 1, pos= tuple([float(item) f
 #st.write(close_date+timedelta(days=1))
 
 
-# affichage gif dans le site 
+# affichage gif dans le site
 import Smartrees.pngs_to_gif as smptg
 import Smartrees.date_to_data as smdtd
-import os 
+import os
 
 
 
@@ -145,13 +153,13 @@ if st.button('Show'):
     im=np.array(Tree_necessity_index_filled).reshape(shapes[10])
     s = ax.imshow(im, cmap='viridis')
     ax.set_title('Tree necessity index')
-    ax.set_xticks([]) 
-    ax.set_yticks([]) 
-    fig.colorbar(s)    
+    ax.set_xticks([])
+    ax.set_yticks([])
+    fig.colorbar(s)
     col2.pyplot(fig)
 
 st.markdown("""
-    ## GIF viewer 
+    ## GIF viewer
 """)
 
 if st.button('Display gif'):
