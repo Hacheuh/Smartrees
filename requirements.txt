@@ -44,6 +44,7 @@ streamlit
 streamlit_folium
 Pillow
 glob2
+base64
 
 
 #date

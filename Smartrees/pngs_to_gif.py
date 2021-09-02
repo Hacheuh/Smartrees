@@ -30,12 +30,16 @@ def output_images(df,name,shape):
     img_NDVI = np.array(df['NDVI'])
     img_B10 = img_B10.reshape(shape) #  (377, 277) va sostituito con data.shapes['10'][:2]
     img_NDVI = img_NDVI.reshape(shape)
-    plt.figure(figsize=(15, 10))
+    plt.figure(figsize=(10, 6))
     plt.imshow(img_B10, cmap='coolwarm')
+    plt.xticks([])
+    plt.yticks([])
     plt.savefig(f'output_images/{name}_Temp.png')
     plt.close()
-    plt.figure(figsize=(15, 10))
+    plt.figure(figsize=(10, 6))
     plt.imshow(img_NDVI, cmap='RdYlGn')
+    plt.xticks([])
+    plt.yticks([])
     plt.savefig(f'output_images/{name}_NDVI.png')
     plt.close()
     return None
