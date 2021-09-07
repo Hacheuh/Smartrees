@@ -1,8 +1,8 @@
 # Data analysis
-- Document here the project: Smartrees
-- Description: Project Description
-- Data Source:
-- Type of analysis:
+- Document here the project: SmarTrees
+- Description: Smart Cities is a formulation given to cities that gather data in order to solve a problem. One of them is heat. Indeed construction materials dissipate hardly the heat making some areas very hot even at night. A solution given by researchers is trees and vegetation in a general sense to cool down specific areas. Our application is a way to give insight on where to put vegetation based on current temperature and vegetation index. The final product is a website, with position and date in input. A map is generated as output highlighting the areas where putting vegetation will have the most impact.
+- Data Source: LANDSAT8 images database through Google Earth Engine API
+- Type of analysis: Gathering and computing satellite images in order to show on a given city, which areas are the hottest relatively to their vegetation index.
 
 Please document the project the better you can.
 
