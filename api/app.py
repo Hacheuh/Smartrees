@@ -16,7 +16,7 @@ import os
 import json
 import ee
 
-# tout ça pour ça
+# Credentials for GEE
 json_str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS42')
 
 json_data = json.loads(json_str)
@@ -30,14 +30,6 @@ service_account = '9319975735-compute@developer.gserviceaccount.com '
 credentials = ee.ServiceAccountCredentials(service_account,'test.json')
 ee.Initialize(credentials)
 os.remove('test.json')
-
-"""ee_image='LANDSAT/LC08/C01/T1_TOA/LC08_195030_20210729'
-img = ee.Image(ee_image).select(['B10'])
-
-credentials = compute_engine.Credentials(scopes=['https://www.googleapis.com/auth/earthengine'])
-ee.Initialize(credentials)"""
-
-
 
 # alternative icon image
 icon = Image.open("api/imgs/SmarTree.JPG")
