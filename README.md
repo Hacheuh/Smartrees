@@ -3,8 +3,6 @@
 - Data Source: LANDSAT8 images database through Google Earth Engine API
 - Type of analysis: Gathering and computing satellite images in order to show on a given city, which areas are the hottest relatively to their vegetation index.
 
-Please document the project the better you can.
-
 # Startup the project
 
 The initial setup.
